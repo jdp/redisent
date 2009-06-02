@@ -1,6 +1,7 @@
 # Redisent
 
 Redisent is a simple, no-nonsense interface to the [Redis](http://code.google.com/p/redis/) key-value store for modest developers.
+Due to the way it is implemented, it is flexible and tolerant of changes to the Redis protocol.
 
 ## Getting to work
 

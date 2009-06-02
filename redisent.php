@@ -10,8 +10,6 @@ class RedisException extends Exception {
 
 class Redisent {
 
-	private $host;
-	private $port;
 	private $__sock;
 	
 	/* Bulk commands have a slightly different format than others */
@@ -21,14 +19,15 @@ class Redisent {
 		'SADD',  'SREM',   'SMOVE', 'SISMEMBER'
 	);
 	
-	private $boolean_cmds = array(
-		'SETNX', 'EXISTS', 'DEL', 'RENAMENX', 'MOVE', 
-		'SADD',  'SREM',   'SISMEMBER'
-	);
-	
 	function __construct($host, $port = 6379) {
-		$this->host = $host;
-		$this->port = $port;
+		$this->__sock = fsockopen($host, $port, $errno, $errstr);
+		if (!$this->__sock) {
+			throw new Exception("{$errno} - {$errstr}");
+		}
+	}
+	
+	function __destruct() {
+		fclose($this->__sock);
 	}
 	
 	function __call($name, $args) {
@@ -37,17 +36,13 @@ class Redisent {
 		$name = strtoupper($name);
 		if (in_array($name, $this->bulk_cmds)) {
 			$value = array_pop($args);
-			$command = sprintf("%s %s %d\r\n%s\r\n", $name, trim(implode(" ", $args)), strlen($value), $value);
+			$command = sprintf("%s %s %d\r\n%s\r\n", $name, trim(implode(' ', $args)), strlen($value), $value);
 		}
 		else {
-			$command = sprintf("%s %s\r\n", $name, trim(implode(" ", $args)));
+			$command = sprintf("%s %s\r\n", $name, trim(implode(' ', $args)));
 		}
 		
 		/* Open a Redis connection and execute the command */
-		$this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
-		if (!$this->__sock) {
-			throw new Exception("{$errno} - {$errstr}");
-		}
 		fwrite($this->__sock, $command);
 		
 		/* Parse the response based on the reply identifier */
@@ -83,7 +78,6 @@ class Redisent {
 				$response = substr($reply, 1);
 				break;
 		}
-		fclose($this->__sock);
 		return $response;
 	}
 	
