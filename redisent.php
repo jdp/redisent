@@ -58,6 +58,10 @@ class Redisent {
 				break;
 			/* Bulk reply */
 			case '$':
+				if ($reply == '$-1') {
+					$response = null;
+					break;
+				}
 				$raw_response = explode(' ', trim(fgets($this->__sock, 1024)));
 				$response = count($raw_response) > 1 ? $raw_response : $raw_response[0];
 				break;
