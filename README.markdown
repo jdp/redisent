@@ -55,7 +55,7 @@ To use routing, you need to assign a server an alias in the constructor of the R
 	  array('host' => '127.0.0.1', 'port' => 6380)
     ));
 
-Now there is a server with the alias **alpha** running on 127.0.0.1:6379, and can be interacted with like this:
+Now there is an alias of the server running on 127.0.0.1:6379 called **alpha**, and can be interacted with like this:
 
     // get server info
     $cluster->to('alpha')->info();

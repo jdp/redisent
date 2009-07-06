@@ -95,7 +95,7 @@ class Redisent {
 				}
 				$response = array();
 				for ($i = 0; $i < $count; $i++) {
-					$bulk_head = trim(fgets($this->__sock, 1024));
+					$bulk_head = trim(fgets($this->__sock));
 					$response[] = ($bulk_head == '$-1') ? null : trim(fgets($this->__sock));
 				}
 				break;
