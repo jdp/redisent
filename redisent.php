@@ -68,7 +68,7 @@ class Redisent {
 		fwrite($this->__sock, $command);
 		
 		/* Parse the response based on the reply identifier */
-		$reply = trim(fgets($this->__sock, 1024));
+		$reply = trim(fgets($this->__sock, 512));
 		switch (substr($reply, 0, 1)) {
 			/* Error reply */
 			case '-':
@@ -84,7 +84,7 @@ class Redisent {
 					$response = null;
 					break;
 				}
-				$raw_response = explode(' ', trim(fgets($this->__sock, 1024)));
+				$raw_response = explode(' ', trim(fgets($this->__sock)));
 				$response = count($raw_response) > 1 ? $raw_response : $raw_response[0];
 				break;
 			/* Multi-bulk reply */
@@ -96,12 +96,12 @@ class Redisent {
 				$response = array();
 				for ($i = 0; $i < $count; $i++) {
 					$bulk_head = trim(fgets($this->__sock, 1024));
-					$response[] = ($bulk_head == '$-1') ? null : trim(fgets($this->__sock, 1024));
+					$response[] = ($bulk_head == '$-1') ? null : trim(fgets($this->__sock));
 				}
 				break;
 			/* Integer reply */
 			case ':':
-				$response = substr($reply, 1);
+				$response = substr(trim($reply), 1);
 				break;
 			default:
 				throw new RedisException('invalid server response type');
