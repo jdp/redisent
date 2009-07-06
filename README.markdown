@@ -31,7 +31,7 @@ You use the exact same command names, and the exact same argument order. **How w
 
 ## Clustering Your Servers
 
-Redisent also includes a way for developers to fully utilize the scalability of Redis with multiple servers and [consistent hashing](http://en.wikipedia.org/Consistent_hashing).
+Redisent also includes a way for developers to fully utilize the scalability of Redis with multiple servers and [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing).
 Using the RedisentCluster class, you can use Redisent the same way, except that keys will be hashed across multiple servers.
 Here is how to set up a cluster:
 
