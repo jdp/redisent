@@ -9,38 +9,51 @@
 
 require 'redisent.php';
 
+/**
+ * A generalized Redisent interface for a cluster of Redis servers
+ */
 class RedisentCluster {
 
 	/**
 	 * Collection of Redisent objects attached to Redis servers
+	 * @var array
+	 * @access private
 	 */
 	private $redisents;
 	
 	/**
 	 * Aliases of Redisent objects attached to Redis servers, used to route commands to specific servers
 	 * @see RedisentCluster::to
+	 * @var array
+	 * @access private
 	 */
 	private $aliases;
 	
 	/**
 	 * Hash ring of Redis server nodes
+	 * @var array
+	 * @access private
 	 */
 	private $ring;
 	
 	/**
 	 * Individual nodes of pointers to Redis servers on the hash ring
+	 * @var array
+	 * @access private
 	 */
 	private $nodes;
 	
 	/**
 	 * Number of replicas of each node to make around the hash ring
+	 * @var integer
+	 * @access private
 	 */
 	private $replicas = 128;
-	
-	public $results;
 
 	/**
 	 * The commands that are not subject to hashing
+	 * @var array
+	 * @access private
 	 */
 	private $dont_hash = array(
 		'RANDOMKEY', 'DBSIZE',
@@ -49,6 +62,10 @@ class RedisentCluster {
 		'INFO',      'MONITOR', 'SLAVEOF'
 	);
 
+	/**
+	 * Creates a Redisent interface to a cluster of Redis servers
+	 * @param array $servers The Redis servers in the cluster. Each server should be in the format array('host' => hostname, 'port' => port)
+	 */
 	function __construct($servers) {
 		$this->ring = array();
 		$this->aliases = array();
@@ -87,10 +104,6 @@ class RedisentCluster {
 		if (!in_array($name, $this->dont_hash)) {
 			$node = $this->nextNode(crc32($args[0]));
 			$redisent = $this->ring[$node];
-			if (!isset($this->results[$node])) {
-				$this->results[$node] = 0;
-			}
-			$this->results[$node] += 1;
     	}
     	else {
 			$redisent = $this->redisents[0];

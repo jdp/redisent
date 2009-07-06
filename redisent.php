@@ -7,15 +7,28 @@
  * @package Redisent
  */
 
+/**
+ * Wraps native Redis errors in friendlier PHP exceptions
+ */
 class RedisException extends Exception {
 }
 
+/**
+ * Redisent, a Redis interface for the modest among us
+ */
 class Redisent {
 
+	/**
+	 * Socket connection to the Redis server
+	 * @var resource
+	 * @access private
+	 */
 	private $__sock;
 	
 	/**
 	 * Redis bulk commands, they are sent in a slightly different format to the server
+	 * @var array
+	 * @access private
 	 */
 	private $bulk_cmds = array(
 		'SET',   'GETSET', 'SETNX', 'ECHO',
@@ -23,6 +36,11 @@ class Redisent {
 		'SADD',  'SREM',   'SMOVE', 'SISMEMBER'
 	);
 	
+	/**
+	 * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
+	 * @param string $host The hostname of the Redis server
+	 * @param integer $port The port number of the Redis server
+	 */
 	function __construct($host, $port = 6379) {
 		$this->__sock = fsockopen($host, $port, $errno, $errstr);
 		if (!$this->__sock) {
@@ -89,6 +107,7 @@ class Redisent {
 				throw new RedisException('invalid server response type');
 				break;
 		}
+		/* Party on */
 		return $response;
 	}
 	
