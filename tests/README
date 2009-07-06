@@ -1,0 +1,8 @@
+Okay, so the test suite could be a little bigger.
+If you want to write more, please do.
+
+The test suite assumes you have redis-cli and redis-server in the same
+directory as all the shell scripts and php scripts. keys.test is a list of
+all the keys that will be tested. start.sh starts 4 Redis servers, stop.sh
+stops them, and redis-cluster.sh sends redis-cli commands to all 4 Redis
+servers at once.

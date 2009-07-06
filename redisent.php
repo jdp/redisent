@@ -1,8 +1,10 @@
 <?php
-/*
+/**
  * Redisent, a Redis interface for the modest
- * Copyright (c) 2009 Justin Poliey <jdp34@njit.edu>
- * Licensed under the MIT license
+ * @author Justin Poliey <jdp34@njit.edu>
+ * @copyright 2009 Justin Poliey <jdp34@njit.edu>
+ * @license http://www.opensource.org/licenses/mit-license.php The MIT License
+ * @package Redisent
  */
 
 class RedisException extends Exception {
@@ -12,9 +14,11 @@ class Redisent {
 
 	private $__sock;
 	
-	/* Bulk commands have a slightly different format than others */
+	/**
+	 * Redis bulk commands, they are sent in a slightly different format to the server
+	 */
 	private $bulk_cmds = array(
-		'SET',   'GETSET', 'SETNX',
+		'SET',   'GETSET', 'SETNX', 'ECHO',
 		'RPUSH', 'LPUSH',  'LSET',  'LREM',
 		'SADD',  'SREM',   'SMOVE', 'SISMEMBER'
 	);
@@ -36,7 +40,7 @@ class Redisent {
 		$name = strtoupper($name);
 		if (in_array($name, $this->bulk_cmds)) {
 			$value = array_pop($args);
-			$command = sprintf("%s %s %d\r\n%s\r\n", $name, trim(implode(' ', $args)), strlen($value), $value);
+			$command = sprintf("%s %s %d\r\n%s\r\n", $name, trim(implode(' ', $args)), strlen(trim($value)), trim($value));
 		}
 		else {
 			$command = sprintf("%s %s\r\n", $name, trim(implode(' ', $args)));
@@ -80,6 +84,9 @@ class Redisent {
 			/* Integer reply */
 			case ':':
 				$response = substr($reply, 1);
+				break;
+			default:
+				throw new RedisException('invalid server response type');
 				break;
 		}
 		return $response;

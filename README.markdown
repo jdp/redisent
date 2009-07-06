@@ -29,6 +29,36 @@ You use the exact same command names, and the exact same argument order. **How w
     }
     echo "</ul>";
 
+## Clustering Your Servers
+
+Redisent also includes a way for developers to fully utilize the scalability of Redis with multiple servers and [consistent hashing](http://en.wikipedia.org/Consistent_hashing).
+Using the RedisentCluster class, you can use Redisent the same way, except that keys will be hashed across multiple servers.
+Here is how to set up a cluster:
+
+    include '../redisent_cluster.php';
+
+    $cluster = new RedisentCluster(array(
+	  array('host' => '127.0.0.1', 'port' => 6379),
+	  array('host' => '127.0.0.1', 'port' => 6380)
+    ));
+
+You can then use Redisent the way you normally would, i.e., `$cluster->set('key', 'value')` or `$cluster->lrange('particles', 0, -1)`.
+But what about when you need to use commands that are server specific and do not operate on keys? You can use routing, with the `RedisCluster::to` method.
+To use routing, you need to assign a server an alias in the constructor of the Redis cluster. Aliases are not required on all servers, either, just the ones you want to be able to access.
+
+    include '../redisent_cluster.php';
+
+    $cluster = new RedisentCluster(array(
+	  'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
+	  array('host' => '127.0.0.1', 'port' => 6380)
+    ));
+
+Now there is a server with the alias **alpha**, and can be interacted with like this:
+
+    // get server info
+    $cluster->to('alpha')->info();
+
+Now you have complete programatic control over your Redis servers.
 
 ## About
 
