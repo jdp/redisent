@@ -6,6 +6,8 @@
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  * @package Redisent
  */
+ 
+define('CRLF', sprintf('%s%s', chr(13), chr(10)));
 
 /**
  * Wraps native Redis errors in friendlier PHP exceptions
@@ -58,10 +60,10 @@ class Redisent {
 		$name = strtoupper($name);
 		if (in_array($name, $this->bulk_cmds)) {
 			$value = array_pop($args);
-			$command = sprintf("%s %s %d\r\n%s\r\n", $name, trim(implode(' ', $args)), strlen(trim($value)), trim($value));
+			$command = sprintf("%s %s %d%s%s%s", $name, trim(implode(' ', $args)), strlen($value), CRLF, $value, CRLF);
 		}
 		else {
-			$command = sprintf("%s %s\r\n", $name, trim(implode(' ', $args)));
+			$command = sprintf("%s %s%s", $name, trim(implode(' ', $args)), CRLF);
 		}
 		
 		/* Open a Redis connection and execute the command */
@@ -72,11 +74,11 @@ class Redisent {
 		switch (substr($reply, 0, 1)) {
 			/* Error reply */
 			case '-':
-				throw new RedisException(trim(substr($reply, 4)));
+				throw new RedisException(substr(trim($reply), 4));
 				break;
 			/* Inline reply */
 			case '+':
-				$response = substr($reply, 1);
+				$response = substr(trim($reply), 1);
 				break;
 			/* Bulk reply */
 			case '$':
@@ -84,8 +86,8 @@ class Redisent {
 					$response = null;
 					break;
 				}
-				$raw_response = explode(' ', trim(fgets($this->__sock)));
-				$response = count($raw_response) > 1 ? $raw_response : $raw_response[0];
+				$size = substr($reply, 1);
+				$response = trim(fread($this->__sock, $size+2));
 				break;
 			/* Multi-bulk reply */
 			case '*':
@@ -95,8 +97,9 @@ class Redisent {
 				}
 				$response = array();
 				for ($i = 0; $i < $count; $i++) {
-					$bulk_head = trim(fgets($this->__sock));
-					$response[] = ($bulk_head == '$-1') ? null : trim(fgets($this->__sock));
+					$bulk_head = trim(fgets($this->__sock, 512));
+					$size = substr($bulk_head, 1);
+					$response[] = ($size == '-1') ? null : trim(fread($this->__sock, $size+2));
 				}
 				break;
 			/* Integer reply */
@@ -104,7 +107,7 @@ class Redisent {
 				$response = substr(trim($reply), 1);
 				break;
 			default:
-				throw new RedisException('invalid server response type');
+				throw new RedisException("invalid server response: {$reply}");
 				break;
 		}
 		/* Party on */
