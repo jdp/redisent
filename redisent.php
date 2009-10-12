@@ -87,7 +87,10 @@ class Redisent {
 					break;
 				}
 				$size = substr($reply, 1);
-				$response = trim(fread($this->__sock, $size+2));
+				$response = "";
+				do {
+					$response .= trim(fread($this->__sock, 1024), CRLF);
+				} while (strlen($response) < $size);
 				break;
 			/* Multi-bulk reply */
 			case '*':
