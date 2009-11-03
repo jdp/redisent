@@ -108,7 +108,7 @@ class Redisent {
 					else {
 						$block = fread($this->__sock, $size); /* get block of size $size */
 						fread($this->__sock, 2); /* discard crlf */
-						$response[] = $raw;
+						$response[] = $block;
 					}
 				}
 				break;
