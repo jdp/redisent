@@ -102,7 +102,14 @@ class Redisent {
 				for ($i = 0; $i < $count; $i++) {
 					$bulk_head = trim(fgets($this->__sock, 512));
 					$size = substr($bulk_head, 1);
-					$response[] = ($size == '-1') ? null : trim(fread($this->__sock, $size+2));
+					if ($size == '-1') {
+						$response[] = null;
+					}
+					else {
+						$block = fread($this->__sock, $size); /* get block of size $size */
+						fread($this->__sock, 2); /* discard crlf */
+						$response[] = $raw;
+					}
 				}
 				break;
 			/* Integer reply */
