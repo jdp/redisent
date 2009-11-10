@@ -86,11 +86,14 @@ class Redisent {
 					$response = null;
 					break;
 				}
+				$read = 0;
 				$size = substr($reply, 1);
-				$response = "";
 				do {
-					$response .= trim(fread($this->__sock, 1024), CRLF);
-				} while (strlen($response) < $size);
+					$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
+					$response = fread($this->__sock, $block_size);
+					$read += $block_size;
+				} while ($read < $size);
+				fread($this->__sock, 2); /* discard crlf */
 				break;
 			/* Multi-bulk reply */
 			case '*':
@@ -106,7 +109,13 @@ class Redisent {
 						$response[] = null;
 					}
 					else {
-						$block = fread($this->__sock, $size); /* get block of size $size */
+						$read = 0;
+						$block = "";
+						do {
+							$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
+							$block .= fread($this->__sock, $block_size);
+							$read += $block_size;
+						} while ($read < $size);
 						fread($this->__sock, 2); /* discard crlf */
 						$response[] = $block;
 					}
