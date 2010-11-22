@@ -28,17 +28,6 @@ class Redisent {
 	private $__sock;
 	
 	/**
-	 * Redis bulk commands, they are sent in a slightly different format to the server
-	 * @var array
-	 * @access private
-	 */
-	private $bulk_cmds = array(
-		'SET',   'GETSET', 'SETNX', 'ECHO',
-		'RPUSH', 'LPUSH',  'LSET',  'LREM',
-		'SADD',  'SREM',   'SMOVE', 'SISMEMBER'
-	);
-	
-	/**
 	 * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
 	 * @param string $host The hostname of the Redis server
 	 * @param integer $port The port number of the Redis server
@@ -56,15 +45,12 @@ class Redisent {
 	
 	function __call($name, $args) {
 	
-		/* Build the Redis protocol command */
+		/* Build the Redis unified protocol command */
 		$name = strtoupper($name);
-		if (in_array($name, $this->bulk_cmds)) {
-			$value = array_pop($args);
-			$command = sprintf("%s %s %d%s%s%s", $name, trim(implode(' ', $args)), strlen($value), CRLF, $value, CRLF);
-		}
-		else {
-			$command = sprintf("%s %s%s", $name, trim(implode(' ', $args)), CRLF);
-		}
+		array_unshift($args, $name);
+		$command = sprintf('*%d%s%s%s', count($args), CRLF, implode(array_map(function($arg) {
+			return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
+		}, $args), CRLF), CRLF);
 		
 		/* Open a Redis connection and execute the command */
 		fwrite($this->__sock, $command);
@@ -90,7 +76,7 @@ class Redisent {
 				$size = substr($reply, 1);
 				do {
 					$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-					$response = fread($this->__sock, $block_size);
+					$response .= fread($this->__sock, $block_size);
 					$read += $block_size;
 				} while ($read < $size);
 				fread($this->__sock, 2); /* discard crlf */
