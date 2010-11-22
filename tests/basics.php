@@ -1,7 +1,7 @@
 <?php
 require '../redisent.php';
 
-$redis = new Redisent('localhost');
+$redis = new redisent\Redis('localhost');
 
 $start_time = microtime(true);
 

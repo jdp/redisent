@@ -6,19 +6,21 @@
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  * @package Redisent
  */
- 
+
+namespace redisent;
+
 define('CRLF', sprintf('%s%s', chr(13), chr(10)));
 
 /**
  * Wraps native Redis errors in friendlier PHP exceptions
  */
-class RedisException extends Exception {
+class RedisException extends \Exception {
 }
 
 /**
  * Redisent, a Redis interface for the modest among us
  */
-class Redisent {
+class Redis {
 
 	/**
 	 * Socket connection to the Redis server
@@ -28,14 +30,30 @@ class Redisent {
 	private $__sock;
 	
 	/**
+	 * Host of the Redis server
+	 * @var string
+	 * @access public
+	 */
+	public $host;
+	
+	/**
+	 * Port on which the Redis server is running
+	 * @var integer
+	 * @access public
+	 */
+	public $port;
+	
+	/**
 	 * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
 	 * @param string $host The hostname of the Redis server
 	 * @param integer $port The port number of the Redis server
 	 */
 	function __construct($host, $port = 6379) {
-		$this->__sock = fsockopen($host, $port, $errno, $errstr);
+		$this->host = $host;
+		$this->port = $port;
+		$this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
 		if (!$this->__sock) {
-			throw new Exception("{$errno} - {$errstr}");
+			throw new \Exception("{$errno} - {$errstr}");
 		}
 	}
 	
@@ -46,14 +64,18 @@ class Redisent {
 	function __call($name, $args) {
 	
 		/* Build the Redis unified protocol command */
-		$name = strtoupper($name);
-		array_unshift($args, $name);
+		array_unshift($args, strtoupper($name));
 		$command = sprintf('*%d%s%s%s', count($args), CRLF, implode(array_map(function($arg) {
 			return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
 		}, $args), CRLF), CRLF);
 		
 		/* Open a Redis connection and execute the command */
-		fwrite($this->__sock, $command);
+		for ($written = 0; $written < strlen($command); $written += $fwrite) {
+			$fwrite = fwrite($this->__sock, substr($command, $written));
+			if ($fwrite === FALSE) {
+				throw new \Exception('Failed to write entire command to stream');
+			}
+		}
 		
 		/* Parse the response based on the reply identifier */
 		$reply = trim(fgets($this->__sock, 512));
@@ -109,7 +131,7 @@ class Redisent {
 				break;
 			/* Integer reply */
 			case ':':
-				$response = substr(trim($reply), 1);
+				$response = intval(substr(trim($reply), 1));
 				break;
 			default:
 				throw new RedisException("invalid server response: {$reply}");
