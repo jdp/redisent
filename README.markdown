@@ -9,14 +9,14 @@ If you're at all familiar with the Redis protocol and PHP objects, you've alread
 All Redisent does is map the Redis protocol to a PHP object, abstract away the nitty-gritty, and make the return values PHP compatible.
 
     require 'redisent.php';
-    $redis = new Redisent('localhost');
+    $redis = new redisent\Redis('localhost');
     $redis->set('awesome', 'absolutely');
     echo sprintf('Is Redisent awesome? %s.\n', $redis->get('awesome'));
 
 You use the exact same command names, and the exact same argument order. **How wonderful.** How about a more complex example?
 
     require 'redisent.php';
-    $redis = new Redisent('localhost');
+    $redis = new redisent\Redis('localhost');
     $redis->rpush('particles', 'proton');
     $redis->rpush('particles', 'electron');
     $redis->rpush('particles', 'neutron');
