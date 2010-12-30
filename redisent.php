@@ -90,8 +90,8 @@ class Redis {
 				break;
 			/* Bulk reply */
 			case '$':
+				$response = null;
 				if ($reply == '$-1') {
-					$response = null;
 					break;
 				}
 				$read = 0;
