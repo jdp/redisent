@@ -78,6 +78,11 @@ class Redis {
 		}
 		
 		/* Parse the response based on the reply identifier */
+		return $this->read_reply();
+	}
+
+	public function read_reply()
+	{
 		$reply = trim(fgets($this->__sock, 512));
 		switch (substr($reply, 0, 1)) {
 			/* Error reply */
@@ -90,15 +95,15 @@ class Redis {
 				break;
 			/* Bulk reply */
 			case '$':
+				if ($reply == '$-1') return null;
 				$response = null;
-				if ($reply == '$-1') {
-					break;
-				}
 				$read = 0;
 				$size = substr($reply, 1);
 				if ($size > 0){
 					do {
-						$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
+						$block_size = $size - $read;
+						if ($block_size > 1024) $block_size = 1024;
+						if ($block_size < 1) break;
 						$response .= fread($this->__sock, $block_size);
 						$read += $block_size;
 					} while ($read < $size);
@@ -108,27 +113,11 @@ class Redis {
 			/* Multi-bulk reply */
 			case '*':
 				$count = substr($reply, 1);
-				if ($count == '-1') {
-					return null;
-				}
+				if ($count == '-1') return null;
+
 				$response = array();
 				for ($i = 0; $i < $count; $i++) {
-					$bulk_head = trim(fgets($this->__sock, 512));
-					$size = substr($bulk_head, 1);
-					if ($size == '-1') {
-						$response[] = null;
-					}
-					else {
-						$read = 0;
-						$block = "";
-						do {
-							$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-							$block .= fread($this->__sock, $block_size);
-							$read += $block_size;
-						} while ($read < $size);
-						fread($this->__sock, 2); /* discard crlf */
-						$response[] = $block;
-					}
+						$response[] = $this->read_reply();
 				}
 				break;
 			/* Integer reply */
@@ -142,5 +131,4 @@ class Redis {
 		/* Party on */
 		return $response;
 	}
-	
 }
