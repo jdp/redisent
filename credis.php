@@ -6,6 +6,11 @@
  *   - use "pipeline()" to start a pipeline of commands instead of multi(Redis::PIPELINE)
  *   - any arrays passed as arguments will be flattened automatically
  *   - setOption and getOption are not supported in native mode
+ *   - order of arguments follows redis-cli instead of phpredis where they differ
+ *
+ * Uses phpredis library if extension is installed.
+ *
+ * Establishes connection lazily.
  *
  * @author Colin Mollenhour <colin@mollenhour.com>
  * @author Justin Poliey <jdp34@njit.edu>
@@ -109,6 +114,18 @@ class Credis {
     }
 
     /**
+     * @return Credis
+     */
+    public function forceNative()
+    {
+        if($this->connected) {
+            throw new CredisException('Cannot force Credis to use native PHP after a connection has already been established.');
+        }
+        $this->native = TRUE;
+        return $this;
+    }
+
+    /**
      * @return bool
      */
     public function connect()
@@ -143,22 +160,39 @@ class Credis {
     
     public function __call($name, $args)
     {
-        $name = strtolower($name);
-
-        // Flatten array arguments to multiple arguments
-        $argsFlat = NULL;
-        foreach($args as $index => $arg) {
-            if(is_array($arg)) {
-                if($argsFlat === NULL) {
-                    $argsFlat = array_slice($args, 0, $index);
-                }
-                $argsFlat = array_merge($argsFlat, $arg);
-            } else if($argsFlat !== NULL) {
-                $argsFlat[] = $arg;
+        // Lazy connection
+        if( ! $this->connected) {
+            if( ! $this->connect() ) {
+                throw new CredisException('Could not connect to redis server.');
             }
         }
-        if($argsFlat !== NULL) {
-            $args = $argsFlat;
+
+        $name = strtolower($name);
+
+        // Flatten array arguments to multiple arguments except if using phpredis with mget
+        if($name == 'mget' && ! $this->native) {
+            if(isset($args[0]) && ! is_array($args[0])) {
+                $args = array($args);
+            }
+        }
+        else if($name == 'lrem' && ! $this->native) {
+            $args = array($args[0], $args[2], $args[1]);
+        }
+        else {
+            $argsFlat = NULL;
+            foreach($args as $index => $arg) {
+                if(is_array($arg)) {
+                    if($argsFlat === NULL) {
+                        $argsFlat = array_slice($args, 0, $index);
+                    }
+                    $argsFlat = array_merge($argsFlat, $arg);
+                } else if($argsFlat !== NULL) {
+                    $argsFlat[] = $arg;
+                }
+            }
+            if($argsFlat !== NULL) {
+                $args = $argsFlat;
+            }
         }
 
         // Send request via native PHP
