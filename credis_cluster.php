@@ -7,12 +7,12 @@
  * @package Redisent
  */
 
-require 'redisent.php';
+require_once 'credis.php';
 
 /**
  * A generalized Redisent interface for a cluster of Redis servers
  */
-class RedisentCluster {
+class CredisCluster {
 
 	/**
 	 * Collection of Redisent objects attached to Redis servers
@@ -70,7 +70,7 @@ class RedisentCluster {
 		$this->ring = array();
 		$this->aliases = array();
 		foreach ($servers as $alias => $server) {
-			$this->redisents[] = new Redisent($server['host'], $server['port']);
+			$this->redisents[] = new Credis($server['host'], $server['port']);
 			if (is_string($alias)) {
 				$this->aliases[$alias] = $this->redisents[count($this->redisents)-1];
 			}
@@ -85,7 +85,7 @@ class RedisentCluster {
 	/**
 	 * Routes a command to a specific Redis server aliased by {$alias}.
 	 * @param string $alias The alias of the Redis server
-	 * @return Redisent The Redisent object attached to the Redis server
+	 * @return Credis The Redisent object attached to the Redis server
 	 */
 	function to($alias) {
 		if (isset($this->aliases[$alias])) {

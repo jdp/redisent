@@ -1,9 +1,9 @@
 <?php
 error_reporting(E_ALL);
 
-include '../redisent_cluster.php';
+include '../credis_cluster.php';
 
-$cluster = new RedisentCluster(array(
+$cluster = new CredisCluster(array(
 	'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
 	'beta'  => array('host' => '127.0.0.1', 'port' => 6380)
 ));

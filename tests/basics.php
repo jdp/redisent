@@ -1,7 +1,7 @@
 <?php
-require '../redisent.php';
+require '../credis.php';
 
-$redis = new redisent\Redis('localhost');
+$redis = new Credis;
 
 $start_time = microtime(true);
 
