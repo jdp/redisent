@@ -28,47 +28,50 @@ class Redis {
 	 * @access private
 	 */
 	private $__sock;
-	
+
 	/**
 	 * Host of the Redis server
 	 * @var string
 	 * @access public
 	 */
 	public $host;
-	
+
 	/**
 	 * Port on which the Redis server is running
 	 * @var integer
 	 * @access public
 	 */
 	public $port;
-	
+
 	/**
 	 * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
 	 * @param string $host The hostname of the Redis server
 	 * @param integer $port The port number of the Redis server
 	 */
-	function __construct($host, $port = 6379) {
+	function __construct($host, $port = 6379, , $db = NULL) {
 		$this->host = $host;
 		$this->port = $port;
 		$this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
 		if (!$this->__sock) {
 			throw new \Exception("{$errno} - {$errstr}");
 		}
+                if (!is_null($db)) {
+                    $this->select($db);
+                }
 	}
-	
+
 	function __destruct() {
 		fclose($this->__sock);
 	}
-	
+
 	function __call($name, $args) {
-	
+
 		/* Build the Redis unified protocol command */
 		array_unshift($args, strtoupper($name));
 		$command = sprintf('*%d%s%s%s', count($args), CRLF, implode(array_map(function($arg) {
 			return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
 		}, $args), CRLF), CRLF);
-		
+
 		/* Open a Redis connection and execute the command */
 		for ($written = 0; $written < strlen($command); $written += $fwrite) {
 			$fwrite = fwrite($this->__sock, substr($command, $written));
@@ -76,7 +79,7 @@ class Redis {
 				throw new \Exception('Failed to write entire command to stream');
 			}
 		}
-		
+
 		/* Parse the response based on the reply identifier */
 		$reply = trim(fgets($this->__sock, 512));
 		switch (substr($reply, 0, 1)) {
@@ -99,8 +102,10 @@ class Redis {
 				if ($size > 0){
 					do {
 						$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-						$response .= fread($this->__sock, $block_size);
-						$read += $block_size;
+            if ($block_size > 0) {
+              $response .= fread($this->__sock, $block_size);
+              $read += $block_size;
+            }
 					} while ($read < $size);
 				}
 				fread($this->__sock, 2); /* discard crlf */
@@ -123,8 +128,10 @@ class Redis {
 						$block = "";
 						do {
 							$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-							$block .= fread($this->__sock, $block_size);
-							$read += $block_size;
+              if ($block_size > 0) {
+                $block .= fread($this->__sock, $block_size);
+                $read += $block_size;
+              }
 						} while ($read < $size);
 						fread($this->__sock, 2); /* discard crlf */
 						$response[] = $block;
@@ -142,5 +149,5 @@ class Redis {
 		/* Party on */
 		return $response;
 	}
-	
+
 }
