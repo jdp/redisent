@@ -1,13 +1,13 @@
 <?php
 /**
- * Redisent, a Redis interface for the modest
+ * Credis, a Redis interface for the modest
  * @author Justin Poliey <jdp34@njit.edu>
  * @copyright 2009 Justin Poliey <jdp34@njit.edu>
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
- * @package Redisent
+ * @package Credis
  */
 
-#require_once 'Credis_Client/Client.php';
+#require_once 'Credis/Client.php';
 
 /**
  * A generalized Credis_Client interface for a cluster of Redis servers
@@ -22,8 +22,8 @@ class Credis_Cluster {
 	private $clients;
 	
 	/**
-	 * Aliases of Redisent objects attached to Redis servers, used to route commands to specific servers
-	 * @see RedisentCluster::to
+	 * Aliases of Credis_Client objects attached to Redis servers, used to route commands to specific servers
+	 * @see Credis_Cluster::to
 	 * @var array
 	 * @access private
 	 */
@@ -63,14 +63,14 @@ class Credis_Cluster {
 	);
 
 	/**
-	 * Creates a Redisent interface to a cluster of Redis servers
+	 * Creates an interface to a cluster of Redis servers
 	 * @param array $servers The Redis servers in the cluster. Each server should be in the format array('host' => hostname, 'port' => port)
 	 */
 	function __construct($servers) {
 		$this->ring = array();
 		$this->aliases = array();
 		foreach ($servers as $alias => $server) {
-			$this->clients[] = new Credis_Client($server['host'], $server['port']);
+			$this->clients[] = new Credis_Client($server['host'], $server['port'], isset($server['timeout']) ? $server['timeout'] : 2.5);
 			if (is_string($alias)) {
 				$this->aliases[$alias] = $this->clients[count($this->clients)-1];
 			}
@@ -85,14 +85,14 @@ class Credis_Cluster {
 	/**
 	 * Routes a command to a specific Redis server aliased by {$alias}.
 	 * @param string $alias The alias of the Redis server
-	 * @return Credis_Client The Redisent object attached to the Redis server
+	 * @return Credis_Client The client object attached to the Redis server
 	 */
 	function to($alias) {
 		if (isset($this->aliases[$alias])) {
 			return $this->aliases[$alias];
 		}
 		else {
-			throw new Exception("That Redisent alias does not exist");
+			throw new CredisException("That Credis_Client alias does not exist");
 		}
 	}
 
@@ -103,20 +103,20 @@ class Credis_Cluster {
 		$name = strtoupper($name);
 		if (!in_array($name, $this->dont_hash)) {
 			$node = $this->nextNode(crc32($args[0]));
-			$redisent = $this->ring[$node];
+			$credisClient = $this->ring[$node];
     	}
     	else {
-			$redisent = $this->clients[0];
+			$credisClient = $this->clients[0];
     	}
 
 		/* Execute the command on the server */
-    	return call_user_func_array(array($redisent, $name), $args);
+    	return call_user_func_array(array($credisClient, $name), $args);
 	}
 
 	/**
 	 * Routes to the proper server node
 	 * @param integer $needle The hash value of the Redis command
-	 * @return Redisent The Redisent object associated with the hash
+	 * @return Credis_Client The client object associated with the hash
 	 */
 	private function nextNode($needle) {
 		$haystack = $this->nodes;

@@ -120,14 +120,14 @@ class Credis_Client {
     public function forceStandalone()
     {
         if($this->connected) {
-            throw new CredisException('Cannot force Credis_Client to use native PHP after a connection has already been established.');
+            throw new CredisException('Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
         }
         $this->standalone = TRUE;
         return $this;
     }
 
     /**
-     * @return bool
+     * @throws CredisException
      */
     public function connect()
     {
@@ -136,19 +136,18 @@ class Credis_Client {
               $this->host = 'unix://'.$this->host;
             }
             $this->redis = fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
-            if($this->redis) {
-                $this->connected = TRUE;
-            } else { throw new CredisException("$errno: $errstr"); }
-            return (bool) $this->redis;
+            if( ! $this->redis) {
+                throw new CredisException("$errno: $errstr");
+            }
         }
         else {
             $this->redis = new Redis;
             $result = $this->redis->connect($this->host, $this->port, $this->timeout);
-            if($result) {
-                $this->connected = TRUE;
+            if( ! $result) {
+                throw new CredisException("An error occurred connecting to Redis.");
             }
-            return $result;
         }
+        $this->connected = TRUE;
     }
 
     /**
@@ -272,33 +271,39 @@ class Credis_Client {
         // Send request via phpredis client
         else
         {
-            // Proxy pipeline mode to the phpredis library
-            if($name == 'pipeline' || $name == 'multi') {
-                if($this->is_multi) {
-                    return $this;
-                } else {
-                    $this->is_multi = TRUE;
-                    $this->redisMulti = call_user_func_array(array($this->redis, $name), $args);
+            try {
+                // Proxy pipeline mode to the phpredis library
+                if($name == 'pipeline' || $name == 'multi') {
+                    if($this->is_multi) {
+                        return $this;
+                    } else {
+                        $this->is_multi = TRUE;
+                        $this->redisMulti = call_user_func_array(array($this->redis, $name), $args);
+                    }
                 }
-            }
-            else if($name == 'exec' || $name == 'discard') {
-                $this->is_multi = FALSE;
-                $response = $this->redisMulti->$name();
-                $this->redisMulti = NULL;
-                return $response;
-            }
+                else if($name == 'exec' || $name == 'discard') {
+                    $this->is_multi = FALSE;
+                    $response = $this->redisMulti->$name();
+                    $this->redisMulti = NULL;
+                    return $response;
+                }
 
-            // Multi and pipeline return self for chaining
-            if($this->is_multi) {
-                call_user_func_array(array($this->redisMulti, $name), $args);
-                return $this;
-            }
+                // Multi and pipeline return self for chaining
+                if($this->is_multi) {
+                    call_user_func_array(array($this->redisMulti, $name), $args);
+                    return $this;
+                }
 
-            // Use aliases to be compatible with phpredis wrapper
-            if(isset($this->aliased_methods[$name])) {
-                $name = $this->aliased_methods[$name];
+                // Use aliases to be compatible with phpredis wrapper
+                if(isset($this->aliased_methods[$name])) {
+                    $name = $this->aliased_methods[$name];
+                }
+                $response = call_user_func_array(array($this->redis, $name), $args);
             }
-            $response = call_user_func_array(array($this->redis, $name), $args);
+            // Wrap exceptions
+            catch(RedisException $e) {
+                throw new CredisException($e->getMessage(), $e->getCode());
+            }
 
             // phpredis sometimes does not use correct return values (we adhere to official redis docs)
             switch($name)
