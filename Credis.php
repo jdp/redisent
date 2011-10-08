@@ -71,7 +71,7 @@ class Credis {
     /**
      * @var bool
      */
-    protected $native;
+    protected $standalone;
 
     /**
      * @var bool
@@ -105,7 +105,7 @@ class Credis {
         $this->host = $host;
         $this->port = $port;
         $this->timeout = $timeout;
-        $this->native = ! extension_loaded('redis');
+        $this->standalone = ! extension_loaded('redis');
     }
 
     public function __destruct()
@@ -116,12 +116,12 @@ class Credis {
     /**
      * @return Credis
      */
-    public function forceNative()
+    public function forceStandalone()
     {
         if($this->connected) {
             throw new CredisException('Cannot force Credis to use native PHP after a connection has already been established.');
         }
-        $this->native = TRUE;
+        $this->standalone = TRUE;
         return $this;
     }
 
@@ -130,7 +130,7 @@ class Credis {
      */
     public function connect()
     {
-        if($this->native) {
+        if($this->standalone) {
             $this->redis = fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
             return (bool) $this->redis;
         }
@@ -147,7 +147,7 @@ class Credis {
     {
         $result = TRUE;
         if($this->connected) {
-            if($this->native) {
+            if($this->standalone) {
                 $result = fclose($this->redis);
             }
             else {
@@ -170,12 +170,12 @@ class Credis {
         $name = strtolower($name);
 
         // Flatten array arguments to multiple arguments except if using phpredis with mget
-        if($name == 'mget' && ! $this->native) {
+        if($name == 'mget' && ! $this->standalone) {
             if(isset($args[0]) && ! is_array($args[0])) {
                 $args = array($args);
             }
         }
-        else if($name == 'lrem' && ! $this->native) {
+        else if($name == 'lrem' && ! $this->standalone) {
             $args = array($args[0], $args[2], $args[1]);
         }
         else {
@@ -196,10 +196,10 @@ class Credis {
         }
 
         // Send request via native PHP
-        if($this->native)
+        if($this->standalone)
         {
             // Translate multi(Redis::PIPELINE) to pipeline()
-            if($name == 'multi' && isset($args[0]) && $args[0] == Redis::PIPELINE) {
+            if($name == 'multi' && isset($args[0]) && $args[0] == 2 /*Redis::PIPELINE*/) {
                 $name = 'pipeline';
             }
 
@@ -258,7 +258,8 @@ class Credis {
         {
             // Proxy pipeline mode to the phpredis library
             if($name == 'pipeline') {
-                return $this->redis->multi(Redis::PIPELINE);
+                $this->redis->pipeline();
+                return $this;
             }
             // Use aliases to be compatible with phpredis wrapper
             if(isset($this->aliased_methods[$name])) {
