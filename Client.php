@@ -1,6 +1,6 @@
 <?php
 /**
- * Credis, a fork of Redisent (a Redis interface for the modest)
+ * Credis_Client, a fork of Redisent (a Redis interface for the modest)
  *
  * All commands are compatible with phpredis library except:
  *   - use "pipeline()" to start a pipeline of commands instead of multi(Redis::PIPELINE)
@@ -16,7 +16,7 @@
  * @author Justin Poliey <jdp34@njit.edu>
  * @copyright 2009 Justin Poliey <jdp34@njit.edu>, Colin Mollenhour <colin@mollenhour.com>
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
- * @package Credis
+ * @package Credis_Client
  */
 
 if( ! defined('CRLF')) define('CRLF', sprintf('%s%s', chr(13), chr(10)));
@@ -28,9 +28,9 @@ class CredisException extends Exception {
 }
 
 /**
- * Credis, a Redis interface for the modest among us
+ * Credis_Client, a Redis interface for the modest among us
  */
-class Credis {
+class Credis_Client {
 
     const TYPE_STRING      = 'string';
     const TYPE_LIST        = 'list';
@@ -114,12 +114,12 @@ class Credis {
     }
 
     /**
-     * @return Credis
+     * @return Credis_Client
      */
     public function forceStandalone()
     {
         if($this->connected) {
-            throw new CredisException('Cannot force Credis to use native PHP after a connection has already been established.');
+            throw new CredisException('Cannot force Credis_Client to use native PHP after a connection has already been established.');
         }
         $this->standalone = TRUE;
         return $this;

@@ -1,7 +1,7 @@
 <?php
-require '../credis.php';
+require '../Client.php';
 
-$redis = new Credis;
+$redis = new Credis_Client;
 
 $start_time = microtime(true);
 
