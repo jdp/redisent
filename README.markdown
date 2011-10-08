@@ -42,18 +42,16 @@ Here is how to set up a cluster:
 
     $cluster = new Credis_Cluster(array(
 	  array('host' => '127.0.0.1', 'port' => 6379),
-	  array('host' => '127.0.0.1', 'port' => 6380)
+	  array('host' => '127.0.0.1', 'port' => 6380),
     ));
 
 You can then use Credis the way you normally would, i.e., `$cluster->set('key', 'value')` or `$cluster->lrange('particles', 0, -1)`.
 But what about when you need to use commands that are server specific and do not operate on keys? You can use routing, with the `CredisCluster::to` method.
 To use routing, you need to assign a server an alias in the constructor of the Redis cluster. Aliases are not required on all servers, just the ones you want to be able to access directly.
 
-    include 'redisent_cluster.php';
-
-    $cluster = new CredisCluster(array(
+    $cluster = new Credis_Cluster(array(
 	  'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
-	  array('host' => '127.0.0.1', 'port' => 6380)
+	  array('host' => '127.0.0.1', 'port' => 6380),
     ));
 
 Now there is an alias of the server running on 127.0.0.1:6379 called **alpha**, and can be interacted with like this:
