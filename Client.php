@@ -29,6 +29,38 @@ class CredisException extends Exception {
 
 /**
  * Credis_Client, a Redis interface for the modest among us
+ *
+ * Server/Connection:
+ * @method string auth(string $password)
+ * @method string select(int $index)
+ * @method Credis_Client pipeline()
+ * @method Credis_Client multi()
+ * @method array exec()
+ * @method string flushAll()
+ * @method string flushDb()
+ *
+ * Keys:
+ * @method int del(string $key)
+ * @method int exists(string $key)
+ * @method int expire(string $key, int $seconds)
+ * @method int expireAt(string $key, int $timestamp)
+ * @method int persist(string $key)
+ * @method int ttl(string $key)
+ * @method string type(string $key)
+ * @method array keys(string $key)
+ *
+ * Strings:
+ * @method null|string get(string $key)
+ * @method string set(string $key, string $value)
+ * @method string setEx(string $key, int $seconds, string $value)
+ *
+ * Sets:
+ * @method int sAdd(string $key, string|array $value, ...)
+ * @method int sRem(string $key, string|array $value, ...)
+ * @method array sMembers(string $key)
+ * @method array sUnion(string|array $key, string $key2, ...)
+ * @method array sInter(string|array $key, string $key2, ...)
+ * @method array sDiff(string|array $key, string $key2, ...)
  */
 class Credis_Client {
 
@@ -171,11 +203,7 @@ class Credis_Client {
     public function __call($name, $args)
     {
         // Lazy connection
-        if( ! $this->connected) {
-            if( ! $this->connect() ) {
-                throw new CredisException('Could not connect to redis server.');
-            }
-        }
+        $this->connected or $this->connect();
 
         $name = strtolower($name);
 
@@ -316,6 +344,8 @@ class Credis_Client {
                     break;
 
                 case 'set':
+                case 'flushdb':
+                case 'flushall':
                     $response = 'OK';
                     break;
 
