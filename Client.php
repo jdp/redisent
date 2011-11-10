@@ -174,7 +174,11 @@ class Credis_Client {
         }
         else {
             $this->redis = new Redis;
-            $result = $this->redis->connect($this->host, $this->port, $this->timeout);
+            if(substr($this->host,0,1) == '/') {
+              $result = $this->redis->connect($this->host, null, $this->timeout);
+            } else {
+              $result = $this->redis->connect($this->host, $this->port, $this->timeout);
+            }
             if( ! $result) {
                 throw new CredisException("An error occurred connecting to Redis.");
             }
