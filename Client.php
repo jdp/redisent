@@ -199,7 +199,7 @@ class Credis_Client {
         }
         return $result;
     }
-    
+
     public function __call($name, $args)
     {
         // Lazy connection
@@ -316,16 +316,17 @@ class Credis_Client {
                     return $response;
                 }
 
+                // Use aliases to be compatible with phpredis wrapper
+                if(isset($this->aliased_methods[$name])) {
+                    $name = $this->aliased_methods[$name];
+                }
+
                 // Multi and pipeline return self for chaining
                 if($this->is_multi) {
                     call_user_func_array(array($this->redisMulti, $name), $args);
                     return $this;
                 }
 
-                // Use aliases to be compatible with phpredis wrapper
-                if(isset($this->aliased_methods[$name])) {
-                    $name = $this->aliased_methods[$name];
-                }
                 $response = call_user_func_array(array($this->redis, $name), $args);
             }
             // Wrap exceptions
