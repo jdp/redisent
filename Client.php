@@ -114,6 +114,11 @@ class Credis_Client {
     /**
      * @var array
      */
+    protected $commandNames;
+
+    /**
+     * @var string
+     */
     protected $commands;
 
     /**
@@ -234,6 +239,7 @@ class Credis_Client {
             }
             if($argsFlat !== NULL) {
                 $args = $argsFlat;
+                $argsFlat = NULL;
             }
         }
 
@@ -248,29 +254,36 @@ class Credis_Client {
                 }
                 else if($name == 'exec') {
                     if($this->is_multi) {
-                        $this->commands[] = array($name);
+                        $this->commandNames[] = strtoupper($name);
+                        $this->commands .= self::_prepare_command(array(strtoupper($name)));
                     }
-                    $commands = array_map( array('self', '_prepare_command'), $this->commands );
-                    if($commands) {
-                        $this->write_command(implode('', $commands));
+
+                    // Write request
+                    if($this->commands) {
+                        $this->write_command($this->commands);
                     }
+                    $this->commands = NULL;
+
+                    // Read response
                     $response = array();
-                    foreach($this->commands as $command) {
-                        $response[] = $this->read_reply($command[0]);
+                    foreach($this->commandNames as $command) {
+                        $response[] = $this->read_reply($command);
                     }
+                    $this->commandNames = NULL;
+
                     if($this->is_multi) {
                         $response = array_pop($response);
                     }
                     $this->use_pipeline = $this->is_multi = FALSE;
-                    $this->commands = NULL;
                     return $response;
                 }
                 else {
                     if($name == 'multi') {
                         $this->is_multi = TRUE;
                     }
-                    array_unshift($args, $name);
-                    $this->commands[] = $args;
+                    array_unshift($args, strtoupper($name));
+                    $this->commandNames[] = strtoupper($name);
+                    $this->commands .= self::_prepare_command($args);
                     return $this;
                 }
             }
@@ -279,7 +292,8 @@ class Credis_Client {
             if($name == 'pipeline')
             {
                 $this->use_pipeline = TRUE;
-                $this->commands = array();
+                $this->commandNames = array();
+                $this->commands = '';
                 return $this;
             }
 
@@ -449,7 +463,7 @@ class Credis_Client {
         // Smooth over differences between phpredis and standalone response
         switch($name)
         {
-            case 'hgetall':
+            case 'HGETALL':
                 $keys = $values = array();
                 while($response) {
                     $keys[] = array_shift($response);
@@ -458,7 +472,7 @@ class Credis_Client {
                 $response = array_combine($keys, $values);
                 break;
 
-            case 'info':
+            case 'INFO':
                 $lines = explode(CRLF, $response);
                 $response = array();
                 foreach($lines as $line) {
@@ -483,7 +497,6 @@ class Credis_Client {
      */
     private static function _prepare_command($args)
     {
-        $args[0] = strtoupper($args[0]);
         return sprintf('*%d%s%s%s', count($args), CRLF, implode(array_map(array('self', '_map'), $args), CRLF), CRLF);
     }
 
