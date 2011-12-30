@@ -16,9 +16,8 @@ class CredisTest extends PHPUnit_Framework_TestCase
   {
     if($this->config === NULL) {
       $configFile = dirname(__FILE__).'/test_config.json';
-      $config = file_get_contents($configFile);
-      if( ! $config) {
-        throw new ErrorException('Could not load '.$configFile);
+      if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
+        $this->markTestSkipped('Could not load '.$configFile);
       }
       $this->config = json_decode($config);
     }
@@ -30,9 +29,11 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
   protected function tearDown()
   {
-    $this->credis->flushDb();
-    $this->credis->close();
-    $this->credis = NULL;
+    if($this->credis) {
+      $this->credis->flushDb();
+      $this->credis->close();
+      $this->credis = NULL;
+    }
   }
 
   public function testStrings()
