@@ -171,10 +171,11 @@ class Credis_Client {
         if($this->standalone) {
             if(substr($this->host,0,1) == '/') {
               $this->host = 'unix://'.$this->host;
+              $this->port = null;
             }
-            $this->redis = fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
+            $this->redis = @fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
             if( ! $this->redis) {
-                throw new CredisException("$errno: $errstr");
+                throw new CredisException("Connection to {$this->host}".($this->port ? ":{$this->port}":'')." failed: $errstr ($errno)");
             }
         }
         else {
