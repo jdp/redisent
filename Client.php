@@ -410,19 +410,19 @@ class Credis_Client {
 
     protected function read_reply($name = '')
     {
-        $reply = trim(fgets($this->redis, 512));
+        $reply = rtrim(fgets($this->redis, 512), "\r\n");
         switch (substr($reply, 0, 1)) {
             /* Error reply */
             case '-':
                 if($this->is_multi || $this->use_pipeline) {
                     $response = FALSE; //$reply; //new CredisException(substr(trim($reply), 4));
                 } else {
-                    throw new CredisException(substr(trim($reply), 4));
+                    throw new CredisException(substr($reply, 4));
                 }
                 break;
             /* Inline reply */
             case '+':
-                $response = substr(trim($reply), 1);
+                $response = substr($reply, 1);
                 break;
             /* Bulk reply */
             case '$':
@@ -453,7 +453,7 @@ class Credis_Client {
                 break;
             /* Integer reply */
             case ':':
-                $response = intval(substr(trim($reply), 1));
+                $response = intval(substr($reply, 1));
                 break;
             default:
                 throw new CredisException("invalid server response: {$reply}");
@@ -463,6 +463,8 @@ class Credis_Client {
         // Smooth over differences between phpredis and standalone response
         switch($name)
         {
+            case '': break;
+
             case 'HGETALL':
                 $keys = $values = array();
                 while($response) {
