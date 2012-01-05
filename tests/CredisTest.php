@@ -38,24 +38,37 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
   public function testStrings()
   {
+    // Basic get/set
     $this->credis->set('foo','FOO');
     $this->assertEquals('FOO', $this->credis->get('foo'));
-    $this->credis->set('bar','BAR');
+
+    // Empty string
+    $this->credis->set('empty','');
+    $this->assertEquals('', $this->credis->get('empty'));
+
+    // UTF-8 characters
+    $utf8str = str_repeat("quarter: ¼, micro: µ, thorn: Þ, ", 500);
+    $this->credis->set('utf8',$utf8str);
+    $this->assertEquals($utf8str, $this->credis->get('utf8'));
 
     // Array
-    $mget = $this->credis->mget(array('foo','bar'));
+    $this->credis->set('bar','BAR');
+    $mget = $this->credis->mget(array('foo','bar','empty'));
     $this->assertTrue(in_array('FOO', $mget));
     $this->assertTrue(in_array('BAR', $mget));
+    $this->assertTrue(in_array('', $mget));
 
     // Non-array
     $mget = $this->credis->mget('foo','bar');
     $this->assertTrue(in_array('FOO', $mget));
     $this->assertTrue(in_array('BAR', $mget));
 
+    // Delete strings, null response
     $this->assertEquals(2, $this->credis->del('foo','bar'));
     $this->assertNull($this->credis->get('foo'));
     $this->assertNull($this->credis->get('bar'));
 
+    // Long string
     $longString = str_repeat(md5('asd')."\r\n", 500);
     $this->assertEquals('OK', $this->credis->set('long', $longString));
     $this->assertEquals($longString, $this->credis->get('long'));
@@ -77,15 +90,22 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
   public function testPipeline()
   {
+    $longString = str_repeat(md5('asd')."\r\n", 500);
     $reply = $this->credis->pipeline()
         ->set('a', 123)
         ->get('a')
         ->sAdd('b', 123)
         ->sMembers('b')
+        ->set('empty','')
+        ->get('empty')
+        ->set('big', $longString)
+        ->get('big')
         ->exec();
     $this->assertEquals(array(
-      'OK', 123, 1, array(123)
+      'OK', 123, 1, array(123), 'OK', '', 'OK', $longString
     ), $reply);
+
+    $this->assertEquals(array(), $this->credis->pipeline()->exec());
   }
 
   public function testTransaction()

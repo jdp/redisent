@@ -70,6 +70,7 @@ class Credis_Client {
     const TYPE_ZSET        = 'zset';
     const TYPE_HASH        = 'hash';
     const TYPE_NONE        = 'none';
+    const FREAD_BLOCK_SIZE = 8192;
 
     /**
      * Socket connection to the Redis server or Redis library instance
@@ -416,7 +417,7 @@ class Credis_Client {
             /* Error reply */
             case '-':
                 if($this->is_multi || $this->use_pipeline) {
-                    $response = FALSE; //$reply; //new CredisException(substr(trim($reply), 4));
+                    $response = FALSE;
                 } else {
                     throw new CredisException(substr($reply, 4));
                 }
@@ -428,19 +429,23 @@ class Credis_Client {
             /* Bulk reply */
             case '$':
                 if ($reply == '$-1') return null;
-                $response = null;
+                $response = '';
                 $read = 0;
                 $size = substr($reply, 1);
-                if ($size > 0){
-                    do {
-                        $block_size = $size - $read;
-                        if ($block_size > 1024) $block_size = 1024;
-                        if ($block_size < 1) break;
-                        $response .= fread($this->redis, $block_size);
-                        $read += $block_size;
-                    } while ($read < $size);
-                }
-                fread($this->redis, 2); /* discard crlf */
+                do {
+                    $block_size = $size - $read;
+                    if ($block_size > self::FREAD_BLOCK_SIZE)
+                      $block_size = self::FREAD_BLOCK_SIZE;
+                    else if ($block_size < 1)
+                      break;
+                    $chunk = fread($this->redis, $block_size);
+                    if ($chunk === FALSE)
+                      throw new CredisException('Error reading reply.');
+                    $read += $block_size;
+                    $response .= $chunk;
+                } while ($read < $size);
+                if(fread($this->redis, 2) != CRLF)
+                  throw new CredisException('Invalid response termination.');
                 break;
             /* Multi-bulk reply */
             case '*':
@@ -457,7 +462,7 @@ class Credis_Client {
                 $response = intval(substr($reply, 1));
                 break;
             default:
-                throw new CredisException("invalid server response: {$reply}");
+                throw new CredisException("Invalid response: {$reply}");
                 break;
         }
 
