@@ -74,13 +74,21 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->assertEquals($longString, $this->credis->get('long'));
   }
 
-  public function testVariadic()
+  public function testSets()
   {
+    // Multiple arguments
     $this->assertEquals(2, $this->credis->sAdd('myset', 'Hello', 'World'));
+
+    // Array Arguments
     $this->assertEquals(1, $this->credis->sAdd('myset', array('Hello','Cruel','World')));
+
+    // Non-empty set
     $members = $this->credis->sMembers('myset');
     $this->assertEquals(3, count($members));
     $this->assertTrue(in_array('Hello', $members));
+
+    // Empty set
+    $this->assertEquals(array(), $this->credis->sMembers('noexist'));
   }
 
   public function testFalsey()

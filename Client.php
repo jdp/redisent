@@ -412,7 +412,7 @@ class Credis_Client {
 
     protected function read_reply($name = '')
     {
-        $reply = rtrim(fgets($this->redis, 512), "\r\n");
+        $reply = rtrim(fgets($this->redis), CRLF);
         switch (substr($reply, 0, 1)) {
             /* Error reply */
             case '-':
@@ -429,23 +429,11 @@ class Credis_Client {
             /* Bulk reply */
             case '$':
                 if ($reply == '$-1') return null;
-                $response = '';
-                $read = 0;
-                $size = substr($reply, 1);
-                do {
-                    $block_size = $size - $read;
-                    if ($block_size > self::FREAD_BLOCK_SIZE)
-                      $block_size = self::FREAD_BLOCK_SIZE;
-                    else if ($block_size < 1)
-                      break;
-                    $chunk = fread($this->redis, $block_size);
-                    if ($chunk === FALSE)
-                      throw new CredisException('Error reading reply.');
-                    $read += $block_size;
-                    $response .= $chunk;
-                } while ($read < $size);
-                if(fread($this->redis, 2) != CRLF)
-                  throw new CredisException('Invalid response termination.');
+                $size = (int) substr($reply, 1);
+                $response = stream_get_contents($this->redis, $size + 2);
+                if( ! $response)
+                    throw new CredisException('Error reading reply.');
+                $response = substr($response, 0, $size);
                 break;
             /* Multi-bulk reply */
             case '*':
@@ -488,7 +476,7 @@ class Credis_Client {
                     $response[$key] = $value;
                 }
                 break;
-            
+
             default:
                 break;
         }
