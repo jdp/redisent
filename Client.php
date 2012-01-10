@@ -256,8 +256,8 @@ class Credis_Client {
                 }
                 else if($name == 'exec') {
                     if($this->is_multi) {
-                        $this->commandNames[] = strtoupper($name);
-                        $this->commands .= self::_prepare_command(array(strtoupper($name)));
+                        $this->commandNames[] = $name;
+                        $this->commands .= self::_prepare_command(array($name));
                     }
 
                     // Write request
@@ -283,8 +283,8 @@ class Credis_Client {
                     if($name == 'multi') {
                         $this->is_multi = TRUE;
                     }
-                    array_unshift($args, strtoupper($name));
-                    $this->commandNames[] = strtoupper($name);
+                    array_unshift($args, $name);
+                    $this->commandNames[] = $name;
                     $this->commands .= self::_prepare_command($args);
                     return $this;
                 }
@@ -459,7 +459,7 @@ class Credis_Client {
         {
             case '': break;
 
-            case 'HGETALL':
+            case 'hgetall':
                 $keys = $values = array();
                 while($response) {
                     $keys[] = array_shift($response);
@@ -468,7 +468,7 @@ class Credis_Client {
                 $response = array_combine($keys, $values);
                 break;
 
-            case 'INFO':
+            case 'info':
                 $lines = explode(CRLF, $response);
                 $response = array();
                 foreach($lines as $line) {
