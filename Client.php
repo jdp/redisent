@@ -171,10 +171,14 @@ class Credis_Client {
     {
         if($this->standalone) {
             if(substr($this->host,0,1) == '/') {
-              $this->host = 'unix://'.$this->host;
+              $remote_socket = 'unix://'.$this->host;
               $this->port = null;
             }
-            $this->redis = @fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
+            else {
+              $remote_socket = 'tcp://'.$this->host.':'.$this->port;
+            }
+            #$this->redis = @fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
+            $this->redis = @stream_socket_client($remote_socket, $errno, $errstr, $this->timeout);
             if( ! $this->redis) {
                 throw new CredisException("Connection to {$this->host}".($this->port ? ":{$this->port}":'')." failed: $errstr ($errno)");
             }
@@ -412,7 +416,10 @@ class Credis_Client {
 
     protected function read_reply($name = '')
     {
-        $reply = rtrim(fgets($this->redis), CRLF);
+        $reply = fgets($this->redis);
+        if($reply !== FALSE) {
+          $reply = rtrim($reply, CRLF);
+        }
         switch (substr($reply, 0, 1)) {
             /* Error reply */
             case '-':
@@ -450,7 +457,7 @@ class Credis_Client {
                 $response = intval(substr($reply, 1));
                 break;
             default:
-                throw new CredisException("Invalid response: {$reply}");
+                throw new CredisException('Invalid response: '.print_r($reply));
                 break;
         }
 
