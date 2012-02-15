@@ -36,11 +36,12 @@ class CredisTest extends PHPUnit_Framework_TestCase
     }
   }
 
-  public function testStrings()
+  public function testScalars()
   {
     // Basic get/set
     $this->credis->set('foo','FOO');
     $this->assertEquals('FOO', $this->credis->get('foo'));
+    $this->assertFalse($this->credis->get('nil'));
 
     // Empty string
     $this->credis->set('empty','');
@@ -52,25 +53,25 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->assertEquals($utf8str, $this->credis->get('utf8'));
 
     // Array
-    $this->credis->set('bar','BAR');
-    $mget = $this->credis->mget(array('foo','bar','empty'));
-    $this->assertTrue(in_array('FOO', $mget));
-    $this->assertTrue(in_array('BAR', $mget));
-    $this->assertTrue(in_array('', $mget));
+    $this->assertTrue($this->credis->mSet(array('bar' => 'BAR', 'apple' => 'red')));
+    $mGet = $this->credis->mGet(array('foo','bar','empty'));
+    $this->assertTrue(in_array('FOO', $mGet));
+    $this->assertTrue(in_array('BAR', $mGet));
+    $this->assertTrue(in_array('', $mGet));
 
     // Non-array
-    $mget = $this->credis->mget('foo','bar');
-    $this->assertTrue(in_array('FOO', $mget));
-    $this->assertTrue(in_array('BAR', $mget));
+    $mGet = $this->credis->mGet('foo','bar');
+    $this->assertTrue(in_array('FOO', $mGet));
+    $this->assertTrue(in_array('BAR', $mGet));
 
     // Delete strings, null response
     $this->assertEquals(2, $this->credis->del('foo','bar'));
-    $this->assertNull($this->credis->get('foo'));
-    $this->assertNull($this->credis->get('bar'));
+    $this->assertFalse($this->credis->get('foo'));
+    $this->assertFalse($this->credis->get('bar'));
 
     // Long string
     $longString = str_repeat(md5('asd')."\r\n", 500);
-    $this->assertEquals('OK', $this->credis->set('long', $longString));
+    $this->assertTrue($this->credis->set('long', $longString));
     $this->assertEquals($longString, $this->credis->get('long'));
   }
 
@@ -89,6 +90,16 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
     // Empty set
     $this->assertEquals(array(), $this->credis->sMembers('noexist'));
+  }
+
+  public function testHashes()
+  {
+    $this->assertEquals(1, $this->credis->hSet('hash','field1','foo'));
+    $this->assertEquals(0, $this->credis->hSet('hash','field1','foo'));
+    $this->assertEquals('foo', $this->credis->hGet('hash','field1'));
+    $this->assertEquals(NULL, $this->credis->hGet('hash','x'));
+    $this->assertTrue($this->credis->hMSet('hash', array('field2' => 'Hello', 'field3' => 'World')));
+    $this->assertEquals(array('foo','Hello',FALSE), $this->credis->hMGet('hash', array('field1','field2','nilfield')));
   }
 
   public function testFalsey()
@@ -110,7 +121,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
         ->get('big')
         ->exec();
     $this->assertEquals(array(
-      'OK', 123, 1, array(123), 'OK', '', 'OK', $longString
+      TRUE, 123, 1, array(123), TRUE, '', TRUE, $longString
     ), $reply);
 
     $this->assertEquals(array(), $this->credis->pipeline()->exec());
@@ -141,7 +152,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
         ->lpop('a')
         ->exec();
     $this->assertEquals(2, count($reply));
-    $this->assertEquals('OK', $reply[0]);
+    $this->assertEquals(TRUE, $reply[0]);
     $this->assertFalse($reply[1]);
   }
 

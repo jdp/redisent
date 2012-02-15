@@ -38,29 +38,62 @@ class CredisException extends Exception {
  * @method array exec()
  * @method string flushAll()
  * @method string flushDb()
+ * @method bool|array config(string $setGet, string $key, string $value)
  *
  * Keys:
- * @method int del(string $key)
- * @method int exists(string $key)
- * @method int expire(string $key, int $seconds)
- * @method int expireAt(string $key, int $timestamp)
- * @method int persist(string $key)
- * @method int ttl(string $key)
- * @method string type(string $key)
- * @method array keys(string $key)
+ * @method int           del(string $key)
+ * @method int           exists(string $key)
+ * @method int           expire(string $key, int $seconds)
+ * @method int           expireAt(string $key, int $timestamp)
+ * @method array         keys(string $key)
+ * @method int           persist(string $key)
+ * @method bool          rename(string $key, string $newKey)
+ * @method bool          renameNx(string $key, string $newKey)
+ * @method array         sort(string $key, string $arg1, ...)
+ * @method int           ttl(string $key)
+ * @method string        type(string $key)
  *
- * Strings:
- * @method null|string get(string $key)
- * @method string set(string $key, string $value)
- * @method string setEx(string $key, int $seconds, string $value)
+ * Scalars:
+ * @method int           append(string $key, string $value)
+ * @method int           decr(string $key)
+ * @method int           decrBy(string $key, int $decrement)
+ * @method bool|string   get(string $key)
+ * @method int           getBit(string $key, int $offset)
+ * @method string        getRange(string $key, int $start, int $end)
+ * @method string        getSet(string $key, string $value)
+ * @method int           incr(string $key)
+ * @method int           incrBy(string $key, int $decrement)
+ * @method array         mGet(array $keys)
+ * @method bool          mSet(array $keysValues)
+ * @method int           mSetNx(array $keysValues)
+ * @method bool          set(string $key, string $value)
+ * @method int           setBit(string $key, int $offset, int $value)
+ * @method bool          setEx(string $key, int $seconds, string $value)
+ * @method int           setNx(string $key, string $value)
+ * @method int           setRange(string $key, int $offset, int $value)
+ * @method int           strLen(string $key)
  *
  * Sets:
- * @method int sAdd(string $key, string|array $value, ...)
- * @method int sRem(string $key, string|array $value, ...)
- * @method array sMembers(string $key)
- * @method array sUnion(string|array $key, string $key2, ...)
- * @method array sInter(string|array $key, string $key2, ...)
- * @method array sDiff(string|array $key, string $key2, ...)
+ * @method int           sAdd(string $key, string|array $value, ...)
+ * @method int           sRem(string $key, string|array $value, ...)
+ * @method array         sMembers(string $key)
+ * @method array         sUnion(string|array $key, string $key2, ...)
+ * @method array         sInter(string|array $key, string $key2, ...)
+ * @method array         sDiff(string|array $key, string $key2, ...)
+ *
+ * Hashes:
+ * @method bool|int      hSet(string $key, string $field, string $value)
+ * @method bool          hSetNx(string $key, string $field, string $value)
+ * @method bool|string   hGet(string $key, string $field)
+ * @method bool|int      hLen(string $key)
+ * @method bool          hDel(string $key, string $field)
+ * @method array         hKeys(string $key, string $field)
+ * @method array         hVals(string $key, string $field)
+ * @method array         hGetAll(string $key)
+ * @method bool          hExists(string $key, string $field)
+ * @method int           hIncrBy(string $key, string $field, int $value)
+ * @method bool          hMSet(string $key, array $keysValues)
+ * @method array         hMGet(string $key, array $fields)
  */
 class Credis_Client {
 
@@ -222,23 +255,24 @@ class Credis_Client {
 
         $name = strtolower($name);
 
-        // Flatten array arguments to multiple arguments except if using phpredis with mget
-        if($name == 'mget' && ! $this->standalone) {
-            if(isset($args[0]) && ! is_array($args[0])) {
-                $args = array($args);
-            }
-        }
-        else if($name == 'lrem' && ! $this->standalone) {
-            $args = array($args[0], $args[2], $args[1]);
-        }
-        else {
+        // Send request via native PHP
+        if($this->standalone)
+        {
+            // Flatten arguments
             $argsFlat = NULL;
             foreach($args as $index => $arg) {
                 if(is_array($arg)) {
                     if($argsFlat === NULL) {
                         $argsFlat = array_slice($args, 0, $index);
                     }
-                    $argsFlat = array_merge($argsFlat, $arg);
+                    if($name == 'mset' || $name == 'msetnx' || $name == 'hmset') {
+                      foreach($arg as $key => $value) {
+                        $argsFlat[] = $key;
+                        $argsFlat[] = $value;
+                      }
+                    } else {
+                      $argsFlat = array_merge($argsFlat, $arg);
+                    }
                 } else if($argsFlat !== NULL) {
                     $argsFlat[] = $arg;
                 }
@@ -247,11 +281,7 @@ class Credis_Client {
                 $args = $argsFlat;
                 $argsFlat = NULL;
             }
-        }
 
-        // Send request via native PHP
-        if($this->standalone)
-        {
             // In pipeline mode
             if($this->use_pipeline)
             {
@@ -323,6 +353,18 @@ class Credis_Client {
         // Send request via phpredis client
         else
         {
+            // Tweak arguments
+            switch($name) {
+                case 'mget':
+                    if(isset($args[0]) && ! is_array($args[0])) {
+                        $args = array($args);
+                    }
+                    break;
+                case 'lrem':
+                    $args = array($args[0], $args[2], $args[1]);
+                    break;
+            }
+
             try {
                 // Proxy pipeline mode to the phpredis library
                 if($name == 'pipeline' || $name == 'multi') {
@@ -358,28 +400,13 @@ class Credis_Client {
                 throw new CredisException($e->getMessage(), $e->getCode());
             }
 
+            #echo "> $name : ".substr(print_r($response, TRUE),0,100)."\n";
             // phpredis sometimes does not use correct return values (we adhere to official redis docs)
             switch($name)
             {
-                // Convert false back to null
-                case 'get':
-                    if($response === FALSE) {
-                        $response = NULL;
-                    }
+                case 'hmget':
+                    $response = array_values($response);
                     break;
-
-                case 'set':
-                case 'flushdb':
-                case 'flushall':
-                    $response = 'OK';
-                    break;
-
-                case 'ttl':
-                    if($response === FALSE) {
-                        $response = -1;
-                    }
-                    break;
-
                 case 'type':
                     $typemap = array(
                       self::TYPE_NONE,
@@ -391,12 +418,6 @@ class Credis_Client {
                     );
                     $response = $typemap[$response];
                     break;
-
-                // Convert bool back to int
-                default:
-                    if(is_bool($response)) {
-                        $response = (int) $response;
-                    }
             }
         }
 
@@ -420,7 +441,9 @@ class Credis_Client {
         if($reply !== FALSE) {
           $reply = rtrim($reply, CRLF);
         }
-        switch (substr($reply, 0, 1)) {
+        #echo "> $name: $reply\n";
+        $replyType = substr($reply, 0, 1);
+        switch ($replyType) {
             /* Error reply */
             case '-':
                 if($this->is_multi || $this->use_pipeline) {
@@ -432,10 +455,13 @@ class Credis_Client {
             /* Inline reply */
             case '+':
                 $response = substr($reply, 1);
+                if($response == 'OK' || $response == 'QUEUED') {
+                  return TRUE;
+                }
                 break;
             /* Bulk reply */
             case '$':
-                if ($reply == '$-1') return null;
+                if ($reply == '$-1') return FALSE;
                 $size = (int) substr($reply, 1);
                 $response = stream_get_contents($this->redis, $size + 2);
                 if( ! $response)
@@ -445,7 +471,7 @@ class Credis_Client {
             /* Multi-bulk reply */
             case '*':
                 $count = substr($reply, 1);
-                if ($count == '-1') return null;
+                if ($count == '-1') return FALSE;
 
                 $response = array();
                 for ($i = 0; $i < $count; $i++) {
@@ -466,6 +492,10 @@ class Credis_Client {
         {
             case '': break;
 
+            case 'hmget':
+
+                break;
+
             case 'hgetall':
                 $keys = $values = array();
                 while($response) {
@@ -481,6 +511,12 @@ class Credis_Client {
                 foreach($lines as $line) {
                     list($key, $value) = explode(':', $line, 2);
                     $response[$key] = $value;
+                }
+                break;
+
+            case 'ttl':
+                if($response === -1) {
+                    $response = FALSE;
                 }
                 break;
 
