@@ -355,6 +355,15 @@ class Credis_Client {
         {
             // Tweak arguments
             switch($name) {
+                case 'get':
+                case 'set':
+                case 'setex':
+                case 'mset':
+                case 'msetnx':
+                case 'hmset':
+                case 'hmget':
+                case 'del':
+                    break;
                 case 'mget':
                     if(isset($args[0]) && ! is_array($args[0])) {
                         $args = array($args);
@@ -363,6 +372,23 @@ class Credis_Client {
                 case 'lrem':
                     $args = array($args[0], $args[2], $args[1]);
                     break;
+                default:
+                    // Flatten arguments
+                    $argsFlat = NULL;
+                    foreach($args as $index => $arg) {
+                        if(is_array($arg)) {
+                            if($argsFlat === NULL) {
+                                $argsFlat = array_slice($args, 0, $index);
+                            }
+                            $argsFlat = array_merge($argsFlat, $arg);
+                        } else if($argsFlat !== NULL) {
+                            $argsFlat[] = $arg;
+                        }
+                    }
+                    if($argsFlat !== NULL) {
+                        $args = $argsFlat;
+                        $argsFlat = NULL;
+                    }
             }
 
             try {
