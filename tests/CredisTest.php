@@ -163,4 +163,9 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->assertFalse($reply[1]);
   }
 
+  public function testServer()
+  {
+    $this->assertTrue(array_key_exists('used_memory', $this->credis->info()));
+    $this->assertTrue(array_key_exists('maxmemory', $this->credis->config('GET', 'maxmemory')));
+  }
 }

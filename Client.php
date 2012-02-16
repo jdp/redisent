@@ -37,7 +37,8 @@ class CredisException extends Exception {
  * @method array         exec()
  * @method string        flushAll()
  * @method string        flushDb()
- * @method bool|array    config(string $setGet, string $key, string $value)
+ * @method array         info()
+ * @method bool|array    config(string $setGet, string $key, string $value = null)
  *
  * Keys:
  * @method int           del(string $key)
@@ -519,7 +520,9 @@ class Credis_Client {
         // Smooth over differences between phpredis and standalone response
         switch($name)
         {
-            case '':
+            case '': // Minor optimization for multi-bulk replies
+                break;
+            case 'config':
             case 'hgetall':
                 $keys = $values = array();
                 while($response) {
@@ -529,7 +532,7 @@ class Credis_Client {
                 $response = array_combine($keys, $values);
                 break;
             case 'info':
-                $lines = explode(CRLF, $response);
+                $lines = explode(CRLF, trim($response,CRLF));
                 $response = array();
                 foreach($lines as $line) {
                     list($key, $value) = explode(':', $line, 2);
