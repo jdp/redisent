@@ -48,7 +48,7 @@ class CredisException extends Exception {
  * @method int           persist(string $key)
  * @method bool          rename(string $key, string $newKey)
  * @method bool          renameNx(string $key, string $newKey)
- * @method array         sort(string $key, string $arg1, ...)
+ * @method array         sort(string $key, string $arg1, string $valueN = null)
  * @method int           ttl(string $key)
  * @method string        type(string $key)
  *
@@ -73,12 +73,12 @@ class CredisException extends Exception {
  * @method int           strLen(string $key)
  *
  * Sets:
- * @method int           sAdd(string $key, string|array $value, ...)
- * @method int           sRem(string $key, string|array $value, ...)
+ * @method int           sAdd(string $key, mixed $value, string $valueN = null)
+ * @method int           sRem(string $key, mixed $value, string $valueN = null)
  * @method array         sMembers(string $key)
- * @method array         sUnion(string|array $key, string $key2, ...)
- * @method array         sInter(string|array $key, string $key2, ...)
- * @method array         sDiff(string|array $key, string $key2, ...)
+ * @method array         sUnion(mixed $keyOrArray, string $valueN = null)
+ * @method array         sInter(mixed $keyOrArray, string $valueN = null)
+ * @method array         sDiff(mixed $keyOrArray, string $valueN = null)
  *
  * Hashes:
  * @method bool|int      hSet(string $key, string $field, string $value)
