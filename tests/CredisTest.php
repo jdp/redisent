@@ -36,6 +36,13 @@ class CredisTest extends PHPUnit_Framework_TestCase
     }
   }
 
+  public function testFlush()
+  {
+    $this->credis->set('foo','FOO');
+    $this->assertTrue($this->credis->flushDb());
+    $this->assertFalse($this->credis->get('foo'));
+  }
+
   public function testScalars()
   {
     // Basic get/set

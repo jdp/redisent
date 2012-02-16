@@ -31,14 +31,14 @@ class CredisException extends Exception {
  * Credis_Client, a Redis interface for the modest among us
  *
  * Server/Connection:
- * @method string auth(string $password)
- * @method string select(int $index)
+ * @method string        auth(string $password)
+ * @method string        select(int $index)
  * @method Credis_Client pipeline()
  * @method Credis_Client multi()
- * @method array exec()
- * @method string flushAll()
- * @method string flushDb()
- * @method bool|array config(string $setGet, string $key, string $value)
+ * @method array         exec()
+ * @method string        flushAll()
+ * @method string        flushDb()
+ * @method bool|array    config(string $setGet, string $key, string $value)
  *
  * Keys:
  * @method int           del(string $key)
@@ -379,6 +379,7 @@ class Credis_Client {
                     $this->is_multi = FALSE;
                     $response = $this->redisMulti->$name();
                     $this->redisMulti = NULL;
+                    #echo "> $name : ".substr(print_r($response, TRUE),0,100)."\n";
                     return $response;
                 }
 
