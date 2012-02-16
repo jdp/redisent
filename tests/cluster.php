@@ -1,7 +1,8 @@
 <?php
 error_reporting(E_ALL);
 
-include '../credis_cluster.php';
+include '../Client.php';
+include '../Cluster.php';
 
 $start_time = microtime(true);
 

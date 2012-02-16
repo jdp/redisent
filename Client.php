@@ -1,20 +1,19 @@
 <?php
 /**
- * Credis_Client, a fork of Redisent (a Redis interface for the modest)
+ * Credis_Client (a fork of Redisent)
  *
- * All commands are compatible with phpredis library except:
+ * Most commands are compatible with phpredis library:
  *   - use "pipeline()" to start a pipeline of commands instead of multi(Redis::PIPELINE)
  *   - any arrays passed as arguments will be flattened automatically
- *   - setOption and getOption are not supported in native mode
- *   - order of arguments follows redis-cli instead of phpredis where they differ
+ *   - setOption and getOption are not supported in standalone mode
+ *   - order of arguments follows redis-cli instead of phpredis where they differ (lrem)
  *
- * Uses phpredis library if extension is installed.
- *
- * Establishes connection lazily.
+ * - Uses phpredis library if extension is installed for better performance.
+ * - Establishes connection lazily.
+ * - Supports tcp and unix sockets
  *
  * @author Colin Mollenhour <colin@mollenhour.com>
- * @author Justin Poliey <jdp34@njit.edu>
- * @copyright 2009 Justin Poliey <jdp34@njit.edu>, Colin Mollenhour <colin@mollenhour.com>
+ * @copyright 2011 Colin Mollenhour <colin@mollenhour.com>
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  * @package Credis_Client
  */
@@ -22,13 +21,13 @@
 if( ! defined('CRLF')) define('CRLF', sprintf('%s%s', chr(13), chr(10)));
 
 /**
- * Wraps native Redis errors in friendlier PHP exceptions
+ * Credis-specific errors, wraps native Redis errors
  */
 class CredisException extends Exception {
 }
 
 /**
- * Credis_Client, a Redis interface for the modest among us
+ * Credis_Client, a lightweight Redis PHP standalone client and phpredis wrapper
  *
  * Server/Connection:
  * @method string        auth(string $password)
@@ -143,7 +142,7 @@ class Credis_Client {
     /**
      * @var bool
      */
-    protected $use_pipeline = FALSE;
+    protected $usePipeline = FALSE;
 
     /**
      * @var array
@@ -158,13 +157,13 @@ class Credis_Client {
     /**
      * @var bool
      */
-    protected $is_multi = FALSE;
+    protected $isMulti = FALSE;
 
     /**
      * Aliases for backwards compatibility with phpredis
      * @var array
      */
-    protected $aliased_methods = array("delete"=>"del","getkeys"=>"keys","sremove"=>"srem");
+    protected $aliasedMethods = array('delete' => 'del', 'getkeys' => 'keys', 'sremove' => 'srem');
 
     /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
@@ -283,13 +282,13 @@ class Credis_Client {
             }
 
             // In pipeline mode
-            if($this->use_pipeline)
+            if($this->usePipeline)
             {
                 if($name == 'pipeline') {
                     throw new CredisException('A pipeline is already in use and only one pipeline is supported.');
                 }
                 else if($name == 'exec') {
-                    if($this->is_multi) {
+                    if($this->isMulti) {
                         $this->commandNames[] = $name;
                         $this->commands .= self::_prepare_command(array($name));
                     }
@@ -307,15 +306,15 @@ class Credis_Client {
                     }
                     $this->commandNames = NULL;
 
-                    if($this->is_multi) {
+                    if($this->isMulti) {
                         $response = array_pop($response);
                     }
-                    $this->use_pipeline = $this->is_multi = FALSE;
+                    $this->usePipeline = $this->isMulti = FALSE;
                     return $response;
                 }
                 else {
                     if($name == 'multi') {
-                        $this->is_multi = TRUE;
+                        $this->isMulti = TRUE;
                     }
                     array_unshift($args, $name);
                     $this->commandNames[] = $name;
@@ -327,7 +326,7 @@ class Credis_Client {
             // Start pipeline mode
             if($name == 'pipeline')
             {
-                $this->use_pipeline = TRUE;
+                $this->usePipeline = TRUE;
                 $this->commandNames = array();
                 $this->commands = '';
                 return $this;
@@ -340,12 +339,12 @@ class Credis_Client {
             $response = $this->read_reply($name);
 
             // Transaction mode
-            if($this->is_multi && ($name == 'exec' || $name == 'discard')) {
-                $this->is_multi = FALSE;
+            if($this->isMulti && ($name == 'exec' || $name == 'discard')) {
+                $this->isMulti = FALSE;
             }
             // Started transaction
-            else if($this->is_multi || $name == 'multi') {
-                $this->is_multi = TRUE;
+            else if($this->isMulti || $name == 'multi') {
+                $this->isMulti = TRUE;
                 $response = $this;
             }
         }
@@ -355,8 +354,10 @@ class Credis_Client {
         {
             // Tweak arguments
             switch($name) {
-                case 'get':
+                case 'get':   // optimize common cases
                 case 'set':
+                case 'hget':
+                case 'hset':
                 case 'setex':
                 case 'mset':
                 case 'msetnx':
@@ -394,15 +395,15 @@ class Credis_Client {
             try {
                 // Proxy pipeline mode to the phpredis library
                 if($name == 'pipeline' || $name == 'multi') {
-                    if($this->is_multi) {
+                    if($this->isMulti) {
                         return $this;
                     } else {
-                        $this->is_multi = TRUE;
+                        $this->isMulti = TRUE;
                         $this->redisMulti = call_user_func_array(array($this->redis, $name), $args);
                     }
                 }
                 else if($name == 'exec' || $name == 'discard') {
-                    $this->is_multi = FALSE;
+                    $this->isMulti = FALSE;
                     $response = $this->redisMulti->$name();
                     $this->redisMulti = NULL;
                     #echo "> $name : ".substr(print_r($response, TRUE),0,100)."\n";
@@ -410,12 +411,12 @@ class Credis_Client {
                 }
 
                 // Use aliases to be compatible with phpredis wrapper
-                if(isset($this->aliased_methods[$name])) {
-                    $name = $this->aliased_methods[$name];
+                if(isset($this->aliasedMethods[$name])) {
+                    $name = $this->aliasedMethods[$name];
                 }
 
                 // Multi and pipeline return self for chaining
-                if($this->is_multi) {
+                if($this->isMulti) {
                     call_user_func_array(array($this->redisMulti, $name), $args);
                     return $this;
                 }
@@ -428,14 +429,15 @@ class Credis_Client {
             }
 
             #echo "> $name : ".substr(print_r($response, TRUE),0,100)."\n";
-            // phpredis sometimes does not use correct return values (we adhere to official redis docs)
+
+            // change return values where it is too difficult to minim in standalone mode
             switch($name)
             {
                 case 'hmget':
                     $response = array_values($response);
                     break;
                 case 'type':
-                    $typemap = array(
+                    $typeMap = array(
                       self::TYPE_NONE,
                       self::TYPE_STRING,
                       self::TYPE_SET,
@@ -443,7 +445,7 @@ class Credis_Client {
                       self::TYPE_ZSET,
                       self::TYPE_HASH,
                     );
-                    $response = $typemap[$response];
+                    $response = $typeMap[$response];
                     break;
             }
         }
@@ -473,7 +475,7 @@ class Credis_Client {
         switch ($replyType) {
             /* Error reply */
             case '-':
-                if($this->is_multi || $this->use_pipeline) {
+                if($this->isMulti || $this->usePipeline) {
                     $response = FALSE;
                 } else {
                     throw new CredisException(substr($reply, 4));
@@ -517,12 +519,7 @@ class Credis_Client {
         // Smooth over differences between phpredis and standalone response
         switch($name)
         {
-            case '': break;
-
-            case 'hmget':
-
-                break;
-
+            case '':
             case 'hgetall':
                 $keys = $values = array();
                 while($response) {
@@ -531,7 +528,6 @@ class Credis_Client {
                 }
                 $response = array_combine($keys, $values);
                 break;
-
             case 'info':
                 $lines = explode(CRLF, $response);
                 $response = array();
@@ -540,18 +536,13 @@ class Credis_Client {
                     $response[$key] = $value;
                 }
                 break;
-
             case 'ttl':
                 if($response === -1) {
                     $response = FALSE;
                 }
                 break;
-
-            default:
-                break;
         }
 
-        /* Party on */
         return $response;
     }
 

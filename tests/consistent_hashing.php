@@ -1,7 +1,8 @@
 <?php
 error_reporting(E_ALL);
 
-include '../credis_cluster.php';
+include '../Client.php';
+include '../Cluster.php';
 
 $start_time = microtime(true);
 
@@ -18,7 +19,7 @@ echo sprintf("Got %d keys\n", count($keys));
 
 /* Use a cluster of 3 servers, make sure they're clean */
 echo "Using a cluster of 3 servers\n";
-$cluster = new CredisCluster(array(
+$cluster = new Credis_Cluster(array(
 	array('host' => '127.0.0.1', 'port' => 6379),
 	array('host' => '127.0.0.1', 'port' => 6380),
 	array('host' => '127.0.0.1', 'port' => 6381)
@@ -31,7 +32,7 @@ foreach ($keys as $key => $value) {
 
 /* Now use a 4th server, and get the key sharding */
 echo "Adding a new server to the cluster\n";
-$cluster = new CredisCluster(array(
+$cluster = new Credis_Cluster(array(
 	array('host' => '127.0.0.1', 'port' => 6379),
 	array('host' => '127.0.0.1', 'port' => 6380),
 	array('host' => '127.0.0.1', 'port' => 6381),
