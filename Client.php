@@ -529,7 +529,7 @@ class Credis_Client {
                     $keys[] = array_shift($response);
                     $values[] = array_shift($response);
                 }
-                $response = array_combine($keys, $values);
+                $response = count($keys) ? array_combine($keys, $values) : array();
                 break;
             case 'info':
                 $lines = explode(CRLF, trim($response,CRLF));
