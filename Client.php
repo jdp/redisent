@@ -456,7 +456,12 @@ class Credis_Client {
 
     protected function write_command($command)
     {
-        /* Execute the command */
+        // Check for lost connection (Redis server "timeout" exceeded since last command)
+        if(feof($this->redis)) {
+            $this->close();
+            $this->connect();
+        }
+
         for ($written = 0; $written < strlen($command); $written += $fwrite) {
             $fwrite = fwrite($this->redis, substr($command, $written));
             if ($fwrite === FALSE) {
@@ -468,9 +473,10 @@ class Credis_Client {
     protected function read_reply($name = '')
     {
         $reply = fgets($this->redis);
-        if($reply !== FALSE) {
-          $reply = rtrim($reply, CRLF);
+        if($reply === FALSE) {
+            throw new CredisException('Lost connection to Redis server.');
         }
+        $reply = rtrim($reply, CRLF);
         #echo "> $name: $reply\n";
         $replyType = substr($reply, 0, 1);
         switch ($replyType) {
@@ -513,7 +519,7 @@ class Credis_Client {
                 $response = intval(substr($reply, 1));
                 break;
             default:
-                throw new CredisException('Invalid response: '.print_r($reply));
+                throw new CredisException('Invalid response: '.print_r($reply, TRUE));
                 break;
         }
 
