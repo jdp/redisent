@@ -10,7 +10,8 @@
  *
  * - Uses phpredis library if extension is installed for better performance.
  * - Establishes connection lazily.
- * - Supports tcp and unix sockets
+ * - Supports tcp and unix sockets.
+ * - Reconnects automatically unless a watch or transaction is in progress.
  *
  * @author Colin Mollenhour <colin@mollenhour.com>
  * @copyright 2011 Colin Mollenhour <colin@mollenhour.com>
@@ -159,6 +160,11 @@ class Credis_Client {
      * @var bool
      */
     protected $isMulti = FALSE;
+
+    /**
+     * @var bool
+     */
+    protected $isWatching = FALSE;
 
     /**
      * Aliases for backwards compatibility with phpredis
@@ -333,14 +339,23 @@ class Credis_Client {
                 return $this;
             }
 
+            // If unwatching, allow reconnect with no error thrown
+            if($name == 'unwatch') {
+                $this->isWatching = FALSE;
+            }
+
             // Non-pipeline mode
             array_unshift($args, $name);
             $command = self::_prepare_command($args);
             $this->write_command($command);
             $response = $this->read_reply($name);
 
+            // Watch mode disables reconnect so error is thrown
+            if($name == 'watch') {
+                $this->isWatching = TRUE;
+            }
             // Transaction mode
-            if($this->isMulti && ($name == 'exec' || $name == 'discard')) {
+            else if($this->isMulti && ($name == 'exec' || $name == 'discard')) {
                 $this->isMulti = FALSE;
             }
             // Started transaction
@@ -459,6 +474,12 @@ class Credis_Client {
         // Check for lost connection (Redis server "timeout" exceeded since last command)
         if(feof($this->redis)) {
             $this->close();
+            // If a watch or transaction was in progress and connection was lost, throw error rather than reconnect
+            // since transaction/watch state will be lost.
+            if(($this->isMulti && ! $this->usePipeline) || $this->isWatching) {
+                $this->isMulti = $this->isWatching = FALSE;
+                throw new CredisException('Lost connection to Redis server during watch or transaction.');
+            }
             $this->connect();
         }
 
