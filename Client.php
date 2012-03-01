@@ -32,7 +32,6 @@ class CredisException extends Exception {
  *
  * Server/Connection:
  * @method string        auth(string $password)
- * @method string        select(int $index)
  * @method Credis_Client pipeline()
  * @method Credis_Client multi()
  * @method array         exec()
@@ -167,6 +166,11 @@ class Credis_Client {
     protected $isWatching = FALSE;
 
     /**
+     * @var int
+     */
+    protected $selectedDb = 0;
+
+    /**
      * Aliases for backwards compatibility with phpredis
      * @var array
      */
@@ -252,6 +256,17 @@ class Credis_Client {
             $this->connected = FALSE;
         }
         return $result;
+    }
+
+    /**
+     * @param int $index
+     * @return bool
+     */
+    public function select($index)
+    {
+        $response = $this->__call('select', array($index));
+        $this->selectedDb = $index;
+        return $response;
     }
 
     public function __call($name, $args)
@@ -471,7 +486,7 @@ class Credis_Client {
 
     protected function write_command($command)
     {
-        // Check for lost connection (Redis server "timeout" exceeded since last command)
+        // Reconnect on lost connection (Redis server "timeout" exceeded since last command)
         if(feof($this->redis)) {
             $this->close();
             // If a watch or transaction was in progress and connection was lost, throw error rather than reconnect
@@ -481,6 +496,9 @@ class Credis_Client {
                 throw new CredisException('Lost connection to Redis server during watch or transaction.');
             }
             $this->connect();
+            if($this->selectedDb != 0) {
+                $this->select($this->selectedDb);
+            }
         }
 
         for ($written = 0; $written < strlen($command); $written += $fwrite) {
