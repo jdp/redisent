@@ -99,8 +99,13 @@ class Redis {
 				if ($size > 0){
 					do {
 						$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-						$response .= fread($this->__sock, $block_size);
-						$read += $block_size;
+						$r = fread($this->__sock, $block_size);
+						if ($r === false) {
+							throw new \Exception('Failed to read response from stream');
+						} else {
+							$read += strlen($r);
+							$response .= $r;
+						}
 					} while ($read < $size);
 				}
 				fread($this->__sock, 2); /* discard crlf */
@@ -123,8 +128,13 @@ class Redis {
 						$block = "";
 						do {
 							$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-							$block .= fread($this->__sock, $block_size);
-							$read += $block_size;
+							$r = fread($this->__sock, $block_size);
+							if ($r === false) {
+								throw new \Exception('Failed to read response from stream');
+							} else {
+								$read += strlen($r);
+								$block .= $r;
+							}
 						} while ($read < $size);
 						fread($this->__sock, 2); /* discard crlf */
 						$response[] = $block;
