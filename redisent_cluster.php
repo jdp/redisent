@@ -7,7 +7,7 @@
  * @package Redisent
  */
 
-require 'redisent.php';
+require_once 'redisent.php';
 
 /**
  * A generalized Redisent interface for a cluster of Redis servers
@@ -70,7 +70,7 @@ class RedisentCluster {
 		$this->ring = array();
 		$this->aliases = array();
 		foreach ($servers as $alias => $server) {
-			$this->redisents[] = new Redisent($server['host'], $server['port']);
+			$this->redisents[] = new \redisent\Redis($server['host'], $server['port']);
 			if (is_string($alias)) {
 				$this->aliases[$alias] = $this->redisents[count($this->redisents)-1];
 			}
