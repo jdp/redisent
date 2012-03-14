@@ -48,7 +48,7 @@ class Redis {
 	 * @param string $host The hostname of the Redis server
 	 * @param integer $port The port number of the Redis server
 	 */
-	function __construct($host, $port = 6379, , $db = NULL) {
+	function __construct($host, $port = 6379, $db = NULL) {
 		$this->host = $host;
 		$this->port = $port;
 		$this->__sock = fsockopen($this->host, $this->port, $errno, $errstr);
