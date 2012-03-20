@@ -212,6 +212,9 @@ class Credis_Client {
      */
     public function connect()
     {
+        if($this->connected) {
+            return;
+        }
         if($this->standalone) {
             if(substr($this->host,0,1) == '/') {
               $remote_socket = 'unix://'.$this->host;
@@ -264,15 +267,15 @@ class Credis_Client {
      */
     public function select($index)
     {
-        $response = $this->__call('select', array($index));
-        $this->selectedDb = $index;
+        $this->selectedDb = (int) $index;
+        $response = $this->__call('select', array($this->selectedDb));
         return $response;
     }
 
     public function __call($name, $args)
     {
         // Lazy connection
-        $this->connected or $this->connect();
+        $this->connect();
 
         $name = strtolower($name);
 
@@ -495,6 +498,7 @@ class Credis_Client {
                 $this->isMulti = $this->isWatching = FALSE;
                 throw new CredisException('Lost connection to Redis server during watch or transaction.');
             }
+            $this->connected = FALSE;
             $this->connect();
             if($this->selectedDb != 0) {
                 $this->select($this->selectedDb);
