@@ -1,4 +1,4 @@
-# Redisent
+# Redisent [![Build Status](https://secure.travis-ci.org/jdp/redisent.png?branch=master)](http://travis-ci.org/jdp/redisent)
 
 Redisent is a simple, no-nonsense interface to the [Redis](http://redis.io) key-value store for modest developers.
 Due to the way it is implemented, it is flexible and tolerant of changes to the Redis protocol.
