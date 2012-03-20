@@ -37,6 +37,20 @@ class Redis {
 	public $dsn;
 
 	/**
+	 * Flag indicating whether or not commands are being pipelined
+	 * @var boolean
+	 * @access private
+	 */
+	private $pipelined = FALSE;
+
+	/**
+	 * The queue of commands to be sent to the Redis server
+	 * @var array
+	 * @access private
+	 */
+	private $queue = array();
+
+	/**
 	 * Creates a Redisent connection to the Redis server at the address specified by {@link $dsn}.
 	 * The default connection is to the server running on localhost on port 6379.
 	 * @param string $dsn The data source name of the Redis server 
@@ -58,6 +72,49 @@ class Redis {
 		fclose($this->__sock);
 	}
 
+	/**
+	 * Returns the Redisent instance ready for pipelining.
+	 * Redis commands can now be chained, and the array of the responses will be returned when {@link uncork} is called.
+	 * @see uncork
+	 * @access public
+	 */
+	function pipeline() {
+		$this->pipelined = TRUE;
+		return $this;
+	}
+
+	/**
+	 * Flushes the commands in the pipeline queue to Redis and returns the responses.
+	 * @see pipeline
+	 * @access public
+	 */
+	function uncork() {
+		/* Open a Redis connection and execute the queued commands */
+		foreach ($this->queue as $command) {
+			for ($written = 0; $written < strlen($command); $written += $fwrite) {
+				$fwrite = fwrite($this->__sock, substr($command, $written));
+				if ($fwrite === FALSE) {
+					throw new \Exception('Failed to write entire command to stream');
+				}
+			}
+		}
+
+		// Read in the results from the pipelined commands
+		$responses = array();
+		for ($i = 0; $i < count($this->queue); $i++) {
+			$responses[] = $this->readResponse();
+		}
+
+		// Clear the queue and return the response
+		$this->queue = array();
+		if ($this->pipelined) {
+			$this->pipelined = FALSE;
+			return $responses;
+		} else {
+			return $responses[0];
+		}
+	}
+
 	function __call($name, $args) {
 
 		/* Build the Redis unified protocol command */
@@ -66,15 +123,14 @@ class Redis {
 			return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
 		}, $args), CRLF), CRLF);
 
-		/* Open a Redis connection and execute the command */
-		for ($written = 0; $written < strlen($command); $written += $fwrite) {
-			$fwrite = fwrite($this->__sock, substr($command, $written));
-			if ($fwrite === FALSE) {
-				throw new \Exception('Failed to write entire command to stream');
-			}
-		}
+		/* Add it to the pipeline queue */
+		$this->queue[] = $command;
 
-		return $this->readResponse();
+		if ($this->pipelined) {
+			return $this;
+		} else {
+			return $this->uncork();
+		}
 	}
 
 	private function readResponse() {
