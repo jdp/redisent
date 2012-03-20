@@ -1,12 +1,19 @@
 # Redisent
 
-Redisent is a simple, no-nonsense interface to the [Redis](http://redis.io) key-value store for modest developers.
-Due to the way it is implemented, it is flexible and tolerant of changes to the Redis protocol.
+Redisent is a simple, no-nonsense interface to the [Redis](http://redis.io) data structure store for modest developers.
+It is designed to flexible and tolerant of changes to the Redis protocol.
 
 ## Introduction
 
 If you're at all familiar with the Redis protocol and PHP objects, you've already mastered Redisent.
 All Redisent does is map the Redis protocol to a PHP object, abstract away the nitty-gritty, and make the return values PHP compatible.
+Any method call on a `Redis` instance is aliased to a Redis command with the same name, so a call to `$redis->set('foo', 'bar')` is translated to `SET foo bar`.
+This is possible because of the [Unified Protocol](http://redis.io/topics/protocol), which makes Redisent very resilient against changes to the Redis command set.
+
+## Quick Start
+
+Redisent has no dependencies aside from requiring PHP versions 5.3 and later.
+To add it to your project, simply drop the redisent.php file into your project structure, instantiate a Redis instance, and start issuing commands.
 
 ```php
 require 'redisent.php';
@@ -16,35 +23,19 @@ $redis->set('awesome', 'absolutely');
 echo "Is Redisent awesome? ", $redis->get('awesome'), "\n";
 ```
 
-Redisent takes advantage of the [Unified Protocol](http://redis.io/topics/protocol) to be resilient to changes to the Redis command set.
+Any errors originating from Redis will be wrapped in a `resident\RedisException` and thrown.
 
-```php
-require 'redisent.php';
+## Roadmap
 
-$redis = new redisent\Redis();
-$redis->rpush('particles', 'proton');
-$redis->rpush('particles', 'electron');
-$redis->rpush('particles', 'neutron');
-$particles = $redis->lrange('particles', 0, -1);
-$particle_count = $redis->llen('particles');
+Redis has grown to be very feature rich, and Redisent is lagging behind.
 
-echo "<p>The {$particle_count} particles that make up atoms are:</p>";
-echo "<ul>";
-foreach ($particles as $particle) {
-  echo "<li>{$particle}</li>";
-}
-echo "</ul>";
-```
-
-Redis error replies will be wrapped in a `RedisException` and thrown.
-
-## Implementation
-
-Behind the scenes, method calls to a `Redis` instance go through the [__call](http://us3.php.net/manual/en/language.oop5.overloading.php#object.call) magic method. The Unified Protocol command is then generated and sent to the Redis server, and the response is returned.
+* Support for publish/subscribe
+* Support for transactions
+* Support for pipelining
 
 ## About
 
-&copy; 2009-2012 [Justin Poliey](http://justinpoliey.com)
+Copyright &copy; 2009-2012 [Justin Poliey](http://justinpoliey.com)
 
 ## License
 
