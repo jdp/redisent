@@ -23,7 +23,7 @@ class Redis extends atoum\test {
 
     $this->assert->boolean($this->redis->set('foo', 'bar'))
       ->isTrue('Failed to set key `foo`');
-    $this->assert->string($this->redis->get('foo'))
+    $this->assert->variable($this->redis->get('foo'))
       ->isEqualTo('bar', 'Key `foo` should have value `bar`');
 
     $this->assert->integer($this->redis->exists('foo'))
@@ -41,6 +41,7 @@ class Redis extends atoum\test {
   function testPipeline() {
     $this->redis = new \redisent\Redis($this->dsn);
 
+    // Test the fluent interface
     $responses = $this->redis->pipeline()
       ->incr('X')
       ->incr('X')
@@ -50,10 +51,25 @@ class Redis extends atoum\test {
 
     $this->assert->array($responses)
       ->isNotEmpty("INCR should have run multiple times")
-      ->containsValues(array(1, 2, 3, 4), "INCR should have run 4 times, resulting in values 1 through 4");
+      ->hasSize(4, "INCR should have run 4 times");
 
     $this->assert->integer($this->redis->del('X'))
-      ->isEqualTo(1, "Failed to delete key used for INCR pipelining");
+      ->isEqualTo(1, "Failed to delete key used for INCR fluent pipelining");
+
+    // Test a less fluent interface
+    $redis = $this->redis->pipeline();
+    for ($i = 0; $i < 10; $i++) {
+      $redis->incr('X');
+    }
+    $responses = $redis->uncork();
+
+    $this->assert->array($responses)
+      ->isNotEmpty("INCR should have run multiple times")
+      ->hasSize(10, "INCR should have run 10 times, resulting in values 1 through 10");
+
+    $this->assert->integer($this->redis->del('X'))
+      ->isEqualTo(1, "Failed to delete key used for INCR procedural pipelining");
+
   }
 
 }
