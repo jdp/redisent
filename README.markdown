@@ -27,7 +27,7 @@ Any errors originating from Redis will be wrapped in a `resident\RedisException`
 
 ## Pipelining
 
-Redisent supports a fluent interface for [pipelining].
+Redisent supports a fluent interface for [pipelining](http://redis.io/topics/pipelining).
 A pipeline is started by calling the `pipeline` method on a `Redis` instance, using Redisent as usual, and then calling the `uncork` method.
 The `uncork` method returns an array of the responses of the pipelined commands.
 
