@@ -1,9 +1,9 @@
 <?php
 /**
  * Redisent, a Redis interface for the modest
- * @author Justin Poliey <jdp34@njit.edu>
- * @copyright 2009 Justin Poliey <jdp34@njit.edu>
- * @license http://www.opensource.org/licenses/mit-license.php The MIT License
+ * @author Justin Poliey <justin@getglue.com>
+ * @copyright 2009-2012 Justin Poliey <justin@getglue.com>
+ * @license http://www.opensource.org/licenses/ISC The ISC License
  * @package Redisent
  */
 
@@ -30,30 +30,27 @@ class Redis {
 	private $__sock;
 
 	/**
-	 * Host of the Redis server
-	 * @var string
+	 * The structure representing the data source of the Redis server
+	 * @var array
 	 * @access public
 	 */
-	public $host;
+	public $dsn;
 
 	/**
-	 * Port on which the Redis server is running
-	 * @var integer
-	 * @access public
+	 * Creates a Redisent connection to the Redis server at the address specified by {@link $dsn}.
+	 * The default connection is to the server running on localhost on port 6379.
+	 * @param string $dsn The data source name of the Redis server 
 	 */
-	public $port;
-
-	/**
-	 * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
-	 * @param string $host The hostname of the Redis server
-	 * @param integer $port The port number of the Redis server
-	 */
-	function __construct($host, $port = 6379) {
-		$this->host = $host;
-		$this->port = $port;
-		$this->__sock = @fsockopen($this->host, $this->port, $errno, $errstr);
-		if (!$this->__sock) {
+	function __construct($dsn = 'redis://localhost:6379') {
+		$this->dsn = parse_url($dsn);
+		$host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
+		$port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
+		$this->__sock = @fsockopen($host, $port, $errno, $errstr);
+		if ($this->__sock === FALSE) {
 			throw new \Exception("{$errno} - {$errstr}");
+		}
+		if (isset($this->dsn['pass'])) {
+			$this->auth($this->dsn['pass']);
 		}
 	}
 
@@ -77,30 +74,37 @@ class Redis {
 			}
 		}
 
+		return $this->readResponse();
+	}
+
+	private function readResponse() {
 		/* Parse the response based on the reply identifier */
 		$reply = trim(fgets($this->__sock, 512));
 		switch (substr($reply, 0, 1)) {
 			/* Error reply */
 			case '-':
-				throw new RedisException(substr(trim($reply), 4));
+				throw new RedisException(trim(substr($reply, 4)));
 				break;
 			/* Inline reply */
 			case '+':
 				$response = substr(trim($reply), 1);
+				if ($response === 'OK') {
+					$response = TRUE;
+				}
 				break;
 			/* Bulk reply */
 			case '$':
-				$response = null;
+				$response = NULL;
 				if ($reply == '$-1') {
 					break;
 				}
 				$read = 0;
-				$size = substr($reply, 1);
-				if ($size > 0){
+				$size = intval(substr($reply, 1));
+				if ($size > 0) {
 					do {
 						$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
 						$r = fread($this->__sock, $block_size);
-						if ($r === false) {
+						if ($r === FALSE) {
 							throw new \Exception('Failed to read response from stream');
 						} else {
 							$read += strlen($r);
@@ -112,33 +116,13 @@ class Redis {
 				break;
 			/* Multi-bulk reply */
 			case '*':
-				$count = substr($reply, 1);
+				$count = intval(substr($reply, 1));
 				if ($count == '-1') {
-					return null;
+					return NULL;
 				}
 				$response = array();
 				for ($i = 0; $i < $count; $i++) {
-					$bulk_head = trim(fgets($this->__sock, 512));
-					$size = substr($bulk_head, 1);
-					if ($size == '-1') {
-						$response[] = null;
-					}
-					else {
-						$read = 0;
-						$block = "";
-						do {
-							$block_size = ($size - $read) > 1024 ? 1024 : ($size - $read);
-							$r = fread($this->__sock, $block_size);
-							if ($r === false) {
-								throw new \Exception('Failed to read response from stream');
-							} else {
-								$read += strlen($r);
-								$block .= $r;
-							}
-						} while ($read < $size);
-						fread($this->__sock, 2); /* discard crlf */
-						$response[] = $block;
-					}
+					$response[] = $this->readResponse();
 				}
 				break;
 			/* Integer reply */
@@ -146,7 +130,7 @@ class Redis {
 				$response = intval(substr(trim($reply), 1));
 				break;
 			default:
-				throw new RedisException("invalid server response: {$reply}");
+				throw new RedisException("Unknown response: {$reply}");
 				break;
 		}
 		/* Party on */

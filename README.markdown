@@ -1,67 +1,55 @@
 # Redisent
 
-Redisent is a simple, no-nonsense interface to the [Redis](http://code.google.com/p/redis/) key-value store for modest developers.
+Redisent is a simple, no-nonsense interface to the [Redis](http://redis.io) key-value store for modest developers.
 Due to the way it is implemented, it is flexible and tolerant of changes to the Redis protocol.
 
-## Getting to work
+## Introduction
 
 If you're at all familiar with the Redis protocol and PHP objects, you've already mastered Redisent.
 All Redisent does is map the Redis protocol to a PHP object, abstract away the nitty-gritty, and make the return values PHP compatible.
 
-    require 'redisent.php';
-    $redis = new redisent\Redis('localhost');
-    $redis->set('awesome', 'absolutely');
-    echo sprintf('Is Redisent awesome? %s.\n', $redis->get('awesome'));
+``` php
+require 'redisent.php';
 
-You use the exact same command names, and the exact same argument order. **How wonderful.** How about a more complex example?
+$redis = new redisent\Redis('redis://localhost');
+$redis->set('awesome', 'absolutely');
+echo sprintf('Is Redisent awesome? %s.\n', $redis->get('awesome'));
+```
 
-    require 'redisent.php';
-    $redis = new redisent\Redis('localhost');
-    $redis->rpush('particles', 'proton');
-    $redis->rpush('particles', 'electron');
-    $redis->rpush('particles', 'neutron');
-    $particles = $redis->lrange('particles', 0, -1);
-    $particle_count = $redis->llen('particles');
-    echo "<p>The {$particle_count} particles that make up atoms are:</p>";
-    echo "<ul>";
-    foreach ($particles as $particle) {
-      echo "<li>{$particle}</li>";
-    }
-    echo "</ul>";
+Redisent takes advantage of the [Unified Protocol](http://redis.io/topics/protocol) to be resilient to changes to the Redis command set.
 
-Be aware that Redis error responses will be wrapped in a RedisException class and thrown, so do be sure to use proper coding techniques.
+``` php
+require 'redisent.php';
 
-## Clustering your servers
+$redis = new redisent\Redis();
+$redis->rpush('particles', 'proton');
+$redis->rpush('particles', 'electron');
+$redis->rpush('particles', 'neutron');
+$particles = $redis->lrange('particles', 0, -1);
+$particle_count = $redis->llen('particles');
 
-Redisent also includes a way for developers to fully utilize the scalability of Redis with multiple servers and [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing).
-Using the RedisentCluster class, you can use Redisent the same way, except that keys will be hashed across multiple servers.
-Here is how to set up a cluster:
+echo "<p>The {$particle_count} particles that make up atoms are:</p>";
+echo "<ul>";
+foreach ($particles as $particle) {
+  echo "<li>{$particle}</li>";
+}
+echo "</ul>";
+```
 
-    include 'redisent_cluster.php';
+Redis error replies will be wrapped in a `RedisException` and thrown.
 
-    $cluster = new RedisentCluster(array(
-	  array('host' => '127.0.0.1', 'port' => 6379),
-	  array('host' => '127.0.0.1', 'port' => 6380)
-    ));
+## Implementation
 
-You can then use Redisent the way you normally would, i.e., `$cluster->set('key', 'value')` or `$cluster->lrange('particles', 0, -1)`.
-But what about when you need to use commands that are server specific and do not operate on keys? You can use routing, with the `RedisentCluster::to` method.
-To use routing, you need to assign a server an alias in the constructor of the Redis cluster. Aliases are not required on all servers, just the ones you want to be able to access directly.
-
-    include 'redisent_cluster.php';
-
-    $cluster = new RedisentCluster(array(
-	  'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
-	  array('host' => '127.0.0.1', 'port' => 6380)
-    ));
-
-Now there is an alias of the server running on 127.0.0.1:6379 called **alpha**, and can be interacted with like this:
-
-    // get server info
-    $cluster->to('alpha')->info();
-
-Now you have complete programatic control over your Redis servers.
+Behind the scenes, method calls to a `Redis` instance go through the `[__call](http://us3.php.net/manual/en/language.oop5.overloading.php#object.call)` magic method. The Unified Protocol command is then generated and sent to the Redis server, and the response is returned.
 
 ## About
 
-&copy; 2009 [Justin Poliey](http://justinpoliey.com)
+&copy; 2009-2012 [Justin Poliey](http://justinpoliey.com)
+
+## [License](http://www.opensource.org/licenses/ISC)
+
+Copyright (c) 2009-2012 Justin Poliey <justin@getglue.com>
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
