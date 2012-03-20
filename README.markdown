@@ -25,13 +25,34 @@ echo "Is Redisent awesome? ", $redis->get('awesome'), "\n";
 
 Any errors originating from Redis will be wrapped in a `resident\RedisException` and thrown.
 
+## Pipelining
+
+Redisent supports a fluent interface for [pipelining].
+A pipeline is started by calling the `pipeline` method on a `Redis` instance, using Redisent as usual, and then calling the `uncork` method.
+The `uncork` method returns an array of the responses of the pipelined commands.
+
+### Example
+
+```php
+$redis = new redisent\Redis();
+$responses = $redis->pipeline()
+    ->incr('X')
+    ->incr('X')
+    ->incr('X')
+    ->incr('X')
+    ->uncork();
+print_r($responses);
+```
+
+If the key X didn't exist, the first INCR would create it and return 1, and successive calls would increment it by 1.
+The return value of the call to `uncork()` would be `array(1,2,3,4)`, the responses of each INCR command.
+
 ## Roadmap
 
 Redis has grown to be very feature rich, and Redisent is lagging behind.
 
 * Support for publish/subscribe
 * Support for transactions
-* Support for pipelining
 
 ## About
 
