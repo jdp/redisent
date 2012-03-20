@@ -8,7 +8,7 @@ use mageekguy\atoum;
 
 class Redis extends atoum\test {
 
-  private $dsn = 'redis://jdp:c5bfca3c8324fef99e0a920d37ea3232@catfish.redistogo.com:9512/';
+  private $dsn = 'redis://localhost/';
   private $redis;
   
   function test__construct() {
