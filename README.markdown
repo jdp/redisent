@@ -8,7 +8,7 @@ Due to the way it is implemented, it is flexible and tolerant of changes to the 
 If you're at all familiar with the Redis protocol and PHP objects, you've already mastered Redisent.
 All Redisent does is map the Redis protocol to a PHP object, abstract away the nitty-gritty, and make the return values PHP compatible.
 
-``` php
+```php
 require 'redisent.php';
 
 $redis = new redisent\Redis('redis://localhost');
@@ -18,7 +18,7 @@ echo sprintf('Is Redisent awesome? %s.\n', $redis->get('awesome'));
 
 Redisent takes advantage of the [Unified Protocol](http://redis.io/topics/protocol) to be resilient to changes to the Redis command set.
 
-``` php
+```php
 require 'redisent.php';
 
 $redis = new redisent\Redis();
@@ -46,7 +46,9 @@ Behind the scenes, method calls to a `Redis` instance go through the `[__call](h
 
 &copy; 2009-2012 [Justin Poliey](http://justinpoliey.com)
 
-## [License](http://www.opensource.org/licenses/ISC)
+## License
+
+Licensed under the [ISC License](http://www.opensource.org/licenses/ISC).
 
 Copyright (c) 2009-2012 Justin Poliey <justin@getglue.com>
 
