@@ -1,4 +1,4 @@
-# Redisent [![Build Status](https://secure.travis-ci.org/jdp/redisent.png?branch=master)](http://travis-ci.org/jdp/redisent)
+# Redisent
 
 Redisent is a simple, no-nonsense interface to the [Redis](http://redis.io) key-value store for modest developers.
 Due to the way it is implemented, it is flexible and tolerant of changes to the Redis protocol.
@@ -13,7 +13,7 @@ require 'redisent.php';
 
 $redis = new redisent\Redis('redis://localhost');
 $redis->set('awesome', 'absolutely');
-echo sprintf('Is Redisent awesome? %s.\n', $redis->get('awesome'));
+echo "Is Redisent awesome? ", $redis->get('awesome'), "\n";
 ```
 
 Redisent takes advantage of the [Unified Protocol](http://redis.io/topics/protocol) to be resilient to changes to the Redis command set.
@@ -40,7 +40,7 @@ Redis error replies will be wrapped in a `RedisException` and thrown.
 
 ## Implementation
 
-Behind the scenes, method calls to a `Redis` instance go through the `[__call](http://us3.php.net/manual/en/language.oop5.overloading.php#object.call)` magic method. The Unified Protocol command is then generated and sent to the Redis server, and the response is returned.
+Behind the scenes, method calls to a `Redis` instance go through the [__call](http://us3.php.net/manual/en/language.oop5.overloading.php#object.call) magic method. The Unified Protocol command is then generated and sent to the Redis server, and the response is returned.
 
 ## About
 
