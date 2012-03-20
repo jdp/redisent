@@ -3,4 +3,4 @@ php:
   - 5.3
   - 5.4
 before_script: wget http://downloads.atoum.org/nightly/mageekguy.atoum.phar
-script: php mageekguy.atoum.phar
+script: php mageekguy.atoum.phar -d tests/
