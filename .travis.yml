@@ -2,5 +2,8 @@ language: php
 php:
   - 5.3
   - 5.4
-before_script: wget http://downloads.atoum.org/nightly/mageekguy.atoum.phar
-script: php mageekguy.atoum.phar -d tests/
+before_script:
+  - wget -O simpletest.tar.gz -- 'http://downloads.sourceforge.net/project/simpletest/simpletest/simpletest_1.1/simpletest_1.1.0.tar.gz'
+  - tar zxf simpletest.tar.gz
+  - rm simpletest.tar.gz
+script: php tests/all_tests.php
