@@ -2,7 +2,7 @@
 namespace redisent\tests;
 
 require_once __DIR__.'/../simpletest/autorun.php';
-require_once __DIR__.'/../redisent.php';
+require_once __DIR__.'/../src/redisent/Redis.php';
 
 class StringsTest extends \UnitTestCase {
 
