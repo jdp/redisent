@@ -2,8 +2,5 @@ language: php
 php:
   - 5.3
   - 5.4
-before_script:
-  - wget -O simpletest.tar.gz -- 'http://downloads.sourceforge.net/project/simpletest/simpletest/simpletest_1.1/simpletest_1.1.0.tar.gz'
-  - tar zxf simpletest.tar.gz
-  - rm simpletest.tar.gz
+before_script: sh setup.sh
 script: php tests/all_tests.php
