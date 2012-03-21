@@ -6,14 +6,51 @@ It is designed to flexible and tolerant of changes to the Redis protocol.
 ## Introduction
 
 If you're at all familiar with the Redis protocol and PHP objects, you've already mastered Redisent.
-All Redisent does is map the Redis protocol to a PHP object, abstract away the nitty-gritty, and make the return values PHP compatible.
-Any method call on a `Redis` instance is aliased to a Redis command with the same name, so a call to `$redis->set('foo', 'bar')` is translated to `SET foo bar`.
-This is possible because of the [Unified Protocol](http://redis.io/topics/protocol), which makes Redisent very resilient against changes to the Redis command set.
+Redisent translates method calls to their [Redis protocol](http://redis.io/topics/protocol) equivalent, abstracting away the nitty-gritty, and then makes the return values PHP compatible.
+
+## Features
+
+### Shared Redis API
+
+The Redisent method names map directly to their Redis command counterparts.
+The full list is available in the [command reference](http://redis.io/commands).
+
+#### Setting Keys
+
+```php
+$redis->set('foo', 'bar')
+// SET foo bar
+```
+
+#### Working with lists
+
+```php
+$redis->lpush('particles', 'electron')
+// LPUSH particles electron
+$redis->lpush('particles', 'proton')
+// LPUSH particles proton
+$redis->lpush('particles', 'neutron')
+// LPUSH particles neutron
+$redis->llen('particles')
+// LLEN particles
+```
+
+### Pipelining
+
+Redisent provides a fluent interface for [pipelining](http://redis.io/topics/pipelining) commands to Redis.
+
+```php
+$redis->pipeline()
+  ->set('X', 2)
+  ->incr('X')
+  ->incr('X')
+  ->uncork(); // #=> array containing the responses of each command
+```
 
 ## Quick Start
 
 Redisent has no dependencies aside from requiring PHP versions 5.3 and later.
-To add it to your project, simply drop the redisent.php file into your project structure, instantiate a Redis instance, and start issuing commands.
+To add it to your project, simply drop the Redis.php file into your project structure, instantiate a Redis instance, and start issuing commands.
 
 ```php
 require_once 'redisent/Redis.php';
@@ -46,12 +83,18 @@ print_r($responses);
 If the key X didn't exist, the first INCR would create it and return 1, and successive calls would increment it by 1.
 The return value of the call to `uncork()` would be `array(1,2,3,4)`, the responses of each INCR command.
 
+## Contributing
+
+Pull requests please! Feature/topic branches are especially appreciated.
+Unit tests are written with [SimpleTest](http://simpletest.org/), please include tests in your pull request.
+To run tests, run `sh setup.sh` script to get set up and then `php tests/all_tests.php` to run the suite.
+
 ## Roadmap
 
 Redis has grown to be very feature rich, and Redisent is lagging behind.
 
-* Support for publish/subscribe
-* Support for transactions
+* Publish/subscribe
+* Transactions
 
 ## About
 
