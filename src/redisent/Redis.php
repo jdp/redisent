@@ -55,16 +55,28 @@ class Redis {
 	 * The default connection is to the server running on localhost on port 6379.
 	 * @param string $dsn The data source name of the Redis server 
 	 */
-	function __construct($dsn = 'redis://localhost:6379') {
+	function __construct($dsn = 'redis://localhost:6379', $options = array()) {
 		$this->dsn = parse_url($dsn);
 
 		$this->max_reconnect_attempts = 1;
 		$this->establishConnection();
+
+		if (isset($options["db"])) {
+			$this->select($options["db"]);
 		}
 	}
 
 	function __destruct() {
 		fclose($this->__sock);
+	}
+
+	/**
+	 * Selects redis database
+	 * @param integer @db The database number
+	 */
+	function select($db) {
+		$this->db = $db;
+		return $this->__call('select', array($db));
 	}
 
 	/**
@@ -192,6 +204,9 @@ class Redis {
 		}
 		if (isset($this->dsn['pass'])) {
 			$this->auth($this->dsn['pass']);
+		}
+		if (isset($this->db)) {
+			$this->select($this->db);
 		}
 	}
 
