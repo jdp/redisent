@@ -57,14 +57,9 @@ class Redis {
 	 */
 	function __construct($dsn = 'redis://localhost:6379') {
 		$this->dsn = parse_url($dsn);
-		$host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
-		$port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
-		$this->__sock = @fsockopen($host, $port, $errno, $errstr);
-		if ($this->__sock === FALSE) {
-			throw new \Exception("{$errno} - {$errstr}");
-		}
-		if (isset($this->dsn['pass'])) {
-			$this->auth($this->dsn['pass']);
+
+		$this->max_reconnect_attempts = 1;
+		$this->establishConnection();
 		}
 	}
 
@@ -91,12 +86,7 @@ class Redis {
 	function uncork() {
 		/* Open a Redis connection and execute the queued commands */
 		foreach ($this->queue as $command) {
-			for ($written = 0; $written < strlen($command); $written += $fwrite) {
-				$fwrite = fwrite($this->__sock, substr($command, $written));
-				if ($fwrite === FALSE) {
-					throw new \Exception('Failed to write entire command to stream');
-				}
-			}
+			$this->writeCommand($command);
 		}
 
 		// Read in the results from the pipelined commands
@@ -192,5 +182,35 @@ class Redis {
 		/* Party on */
 		return $response;
 	}
+
+	private function establishConnection() {
+		$host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
+		$port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
+		$this->__sock = @fsockopen($host, $port, $errno, $errstr);
+		if ($this->__sock === FALSE) {
+			throw new \Exception("{$errno} - {$errstr}");
+		}
+		if (isset($this->dsn['pass'])) {
+			$this->auth($this->dsn['pass']);
+		}
+	}
+
+	private function writeCommand($command) {
+		$reconnects = 0;
+		for ($written = 0; $written < strlen($command); $written += $fwrite) {
+			$fwrite = fwrite($this->__sock, substr($command, $written));
+			if ($fwrite === false || $fwrite === 0) {
+				if ($reconnects > $this->max_reconnect_attempts) {
+					throw new Exception('Failed to write entire command to stream');
+				} else {
+					$reconnects += 1;
+					fclose($this->__sock);
+					$this->establishConnection();
+					$written = 0;
+				}
+			}
+		}
+	}
+
 
 }
