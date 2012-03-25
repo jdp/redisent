@@ -1,10 +1,21 @@
 <?php
 error_reporting(E_ALL);
 
-include '../Client.php';
-include '../Cluster.php';
+$replicas = 128;
+if($argc == 2) $replicas = $argv[1];
+
+require '../Client.php';
+require '../Cluster.php';
 
 $start_time = microtime(true);
+
+/* Use a cluster of 3 servers, make sure they're clean */
+$cluster = new Credis_Cluster(array(
+	array('host' => '127.0.0.1', 'port' => 6379),
+	array('host' => '127.0.0.1', 'port' => 6380),
+	array('host' => '127.0.0.1', 'port' => 6381)
+), $replicas);
+printf("Initialized 3 servers with $replicas replicas in %f seconds\n", microtime(true)-$start_time);
 
 /* Get all the keys to use */
 $keys = array();
@@ -15,29 +26,20 @@ foreach ($lines as $line) {
 		$keys[$pair[0]] = $pair[1];
 	}
 }
-echo sprintf("Got %d keys\n", count($keys));
-
-/* Use a cluster of 3 servers, make sure they're clean */
-echo "Using a cluster of 3 servers\n";
-$cluster = new CredisCluster(array(
-	array('host' => '127.0.0.1', 'port' => 6379),
-	array('host' => '127.0.0.1', 'port' => 6380),
-	array('host' => '127.0.0.1', 'port' => 6381)
-));
-
-echo sprintf("Setting %d keys\n", count($keys));
+printf("Setting %d keys\n", count($keys));
+$cluster->all('flushDb');
 foreach ($keys as $key => $value) {
 	$cluster->set($key, $value);
 }
 
 /* Now use a 4th server, and get the key sharding */
 echo "Adding a new server to the cluster\n";
-$cluster = new CredisCluster(array(
+$cluster = new Credis_Cluster(array(
 	array('host' => '127.0.0.1', 'port' => 6379),
 	array('host' => '127.0.0.1', 'port' => 6380),
 	array('host' => '127.0.0.1', 'port' => 6381),
 	array('host' => '127.0.0.1', 'port' => 6382)
-));
+), $replicas);
 
 /* Try to reset all the keys, and keep track of shards */
 $hits = 0;
@@ -45,12 +47,14 @@ foreach ($keys as $key => $value) {
 	if ($cluster->get($key)) {
 		$hits++;
 	}
-	else {
-		$cluster->set($key, $value);
-	}
+}
+
+foreach($cluster->all('info') as $info) {
+  if(isset($info['db0'])) {
+    echo "{$info['db0']}\n";
+  }
 }
 
 /* End tests and print results */
-$end_time = microtime(true);
-echo sprintf("%d key hits (%f%% efficiency)\n", $hits, ($hits / count($keys)) * 100);
-echo sprintf("Tests completed in %f seconds\n", $end_time-$start_time);
+printf("%d key hits (%f%% efficiency)\n", $hits, ($hits / count($keys)) * 100);
+printf("Tests completed in %f seconds\n", microtime(true)-$start_time);
