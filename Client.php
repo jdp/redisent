@@ -197,6 +197,8 @@ class Credis_Client {
 
     /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
+     * $host may also be a path to a unix socket or a string in the form of tcp://[hostname]:[port] or unix://[path]
+     *
      * @param string $host The hostname of the Redis server
      * @param integer $port The port number of the Redis server
      * @param float $timeout  Timeout period in seconds
@@ -233,6 +235,15 @@ class Credis_Client {
     {
         if($this->connected) {
             return;
+        }
+        if(preg_match('#^(tcp|unix)://(.*)$#', $this->host, $matches)) {
+            if($matches[1] == 'tcp') {
+                $hostParts = explode(':', $matches[2], 2);
+                $this->host = $hostParts[0];
+                $this->port = (int) (isset($hostParts[1]) ? $hostParts[1] : '6379');
+            } else {
+                $this->host = $matches[2];
+            }
         }
         if($this->standalone) {
             if(substr($this->host,0,1) == '/') {
