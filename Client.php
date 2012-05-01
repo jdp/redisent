@@ -94,6 +94,25 @@ class CredisException extends Exception {
  * @method int           hIncrBy(string $key, string $field, int $value)
  * @method bool          hMSet(string $key, array $keysValues)
  * @method array         hMGet(string $key, array $fields)
+ *
+ * Lists:
+ * @method array|null    blPop(string $keyN, int $timeout)
+ * @method array|null    brPop(string $keyN, int $timeout)
+ * @method array|null    brPoplPush(string $source, string $destination, int $timeout)
+ * @method string|null   lIndex(string $key, int $index)
+ * @method int           lInsert(string $key, string $beforeAfter, string $pivot, string $value)
+ * @method int           lLen(string $key)
+ * @method string|null   lPop(string $key)
+ * @method int           lPush(string $key, mixed $value, mixed $valueN = null)
+ * @method int           lPushX(string $key, mixed $value)
+ * @method array         lRange(string $key, int $start, int $stop)
+ * @method int           lRem(string $key, int $count, mixed $value)
+ * @method bool          lSet(string $key, int $index, mixed $value)
+ * @method bool          lTrim(string $key, int $start, int $stop)
+ * @method string|null   rPop(string $key)
+ * @method string|null   rPoplPush(string $source, string $destination)
+ * @method int           rPush(string $key, mixed $value, mixed $valueN = null)
+ * @method int           rPushX(string $key, mixed $value)
  */
 class Credis_Client {
 
