@@ -31,7 +31,6 @@ class CredisException extends Exception {
  * Credis_Client, a lightweight Redis PHP standalone client and phpredis wrapper
  *
  * Server/Connection:
- * @method string        auth(string $password)
  * @method Credis_Client pipeline()
  * @method Credis_Client multi()
  * @method array         exec()
@@ -185,6 +184,11 @@ class Credis_Client {
     protected $isWatching = FALSE;
 
     /**
+     * @var string
+     */
+    protected $authPassword;
+
+    /**
      * @var int
      */
     protected $selectedDb = 0;
@@ -289,6 +293,17 @@ class Credis_Client {
             $this->connected = FALSE;
         }
         return $result;
+    }
+
+    /**
+     * @param string $password
+     * @return bool
+     */
+    public function auth($password)
+    {
+        $this->authPassword = $password;
+        $response = $this->__call('auth', array($this->authPassword));
+        return $response;
     }
 
     /**
@@ -530,6 +545,9 @@ class Credis_Client {
             }
             $this->connected = FALSE;
             $this->connect();
+            if($this->authPassword) {
+                $this->auth($this->authPassword);
+            }
             if($this->selectedDb != 0) {
                 $this->select($this->selectedDb);
             }
