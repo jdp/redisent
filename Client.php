@@ -12,6 +12,7 @@
  * - Establishes connection lazily.
  * - Supports tcp and unix sockets.
  * - Reconnects automatically unless a watch or transaction is in progress.
+ * - Can set automatic retry connection attempts for iffy Redis connections.
  *
  * @author Colin Mollenhour <colin@mollenhour.com>
  * @copyright 2011 Colin Mollenhour <colin@mollenhour.com>
@@ -159,6 +160,16 @@ class Credis_Client {
     protected $standalone;
 
     /**
+     * @var int
+     */
+    protected $maxConnectRetries = 0;
+
+    /**
+     * @var int
+     */
+    protected $connectFailures = 0;
+
+    /**
      * @var bool
      */
     protected $usePipeline = FALSE;
@@ -221,6 +232,7 @@ class Credis_Client {
     }
 
     /**
+     * @throws CredisException
      * @return Credis_Client
      */
     public function forceStandalone()
@@ -233,12 +245,22 @@ class Credis_Client {
     }
 
     /**
+     * @param int $retries
+     * @return Credis_Client
+     */
+    public function setMaxConnectRetries($retries)
+    {
+        $this->maxConnectRetries = $retries;
+        return $this;
+    }
+
+    /**
      * @throws CredisException
      */
     public function connect()
     {
         if($this->connected) {
-            return;
+            return $this;
         }
         if(preg_match('#^(tcp|unix)://(.*)$#', $this->host, $matches)) {
             if($matches[1] == 'tcp') {
@@ -251,8 +273,8 @@ class Credis_Client {
         }
         if($this->standalone) {
             if(substr($this->host,0,1) == '/') {
-              $remote_socket = 'unix://'.$this->host;
-              $this->port = null;
+                $remote_socket = 'unix://'.$this->host;
+                $this->port = null;
             }
             else {
               $remote_socket = 'tcp://'.$this->host.':'.$this->port;
@@ -260,21 +282,35 @@ class Credis_Client {
             #$this->redis = @fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
             $this->redis = @stream_socket_client($remote_socket, $errno, $errstr, $this->timeout);
             if( ! $this->redis) {
+                $this->connectFailures++;
+                if ($this->connectFailures > $this->maxConnectRetries) {
+                    return $this->connect();
+                }
+                $this->connectFailures = 0;
                 throw new CredisException("Connection to {$this->host}".($this->port ? ":{$this->port}":'')." failed: $errstr ($errno)");
             }
         }
         else {
-            $this->redis = new Redis;
+            if ( ! $this->redis) {
+                $this->redis = new Redis;
+            }
             if(substr($this->host,0,1) == '/') {
-              $result = $this->redis->connect($this->host, null, $this->timeout);
+                $result = $this->redis->connect($this->host, null, $this->timeout);
             } else {
-              $result = $this->redis->connect($this->host, $this->port, $this->timeout);
+                $result = $this->redis->connect($this->host, $this->port, $this->timeout);
             }
             if( ! $result) {
+                $this->connectFailures++;
+                if ($this->connectFailures > $this->maxConnectRetries) {
+                    return $this->connect();
+                }
+                $this->connectFailures = 0;
                 throw new CredisException("An error occurred connecting to Redis.");
             }
         }
+        $this->connectFailures = 0;
         $this->connected = TRUE;
+        return $this;
     }
 
     /**
