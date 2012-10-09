@@ -95,7 +95,7 @@ class Redis {
 		foreach ($this->queue as $command) {
 			for ($written = 0; $written < strlen($command); $written += $fwrite) {
 				$fwrite = fwrite($this->__sock, substr($command, $written));
-				if ($fwrite === FALSE) {
+				if ($fwrite === FALSE || $fwrite <= 0) {
 					throw new \Exception('Failed to write entire command to stream');
 				}
 			}
