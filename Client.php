@@ -283,6 +283,9 @@ class Credis_Client {
             if(substr($this->host,0,1) == '/') {
                 $remote_socket = 'unix://'.$this->host;
                 $this->port = null;
+                if ($this->persistent) {
+                    throw new CredisException("Persistent connections to UNIX sockets are not supported in standalone mode");
+                }
             }
             else {
               $remote_socket = 'tcp://'.$this->host.':'.$this->port;
