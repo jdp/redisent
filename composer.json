@@ -1,0 +1,22 @@
+{
+    "name": "redisent/redisent",
+    "description": "Redisent",
+    "keywords": ["redis"],
+    "type": "library",
+    "homepage": "https://github.com/jdp/redisent",
+    "license": "ISC",
+    "authors": [
+        {
+            "name": "Justin Poliey",
+            "homepage": "http://justinpoliey.com/"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "ext-sockets": "*",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "classmap": ["src"]
+    }
+}
