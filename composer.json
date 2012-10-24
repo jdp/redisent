@@ -16,6 +16,6 @@
         "ext-sockets": "*"
     },
     "autoload": {
-        "classmap": ["src"]
+        "psr-0": {"redisent": "src"}
     }
 }
