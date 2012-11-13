@@ -88,11 +88,12 @@ class Credis_Cluster
       'INFO',      'MONITOR', 'SLAVEOF'
     ));
   }
-  
+
   /**
    * Get a client by index or alias.
    *
    * @param string|int $alias
+   * @throws CredisException
    * @return Credis_Client
    */
   public function client($alias)
@@ -171,7 +172,7 @@ class Credis_Cluster
   public function hash($key)
   {
     $needle = crc32($key);
-    $min = 0;
+    $server = $min = 0;
     $max = count($this->nodes) - 1;
     while ($max >= $min) {
       $position = (int) (($min + $max) / 2);
