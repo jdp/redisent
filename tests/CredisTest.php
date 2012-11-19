@@ -24,6 +24,8 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->credis = new Credis_Client($this->config->host, $this->config->port, $this->config->timeout);
     if($this->useStandalone) {
       $this->credis->forceStandalone();
+    } else if ( ! extension_loaded('redis')) {
+      $this->fail('The Redis extension is not loaded.');
     }
   }
 
@@ -77,7 +79,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->assertFalse($this->credis->get('bar'));
 
     // Long string
-    $longString = str_repeat(md5('asd')."\r\n", 500);
+    $longString = str_repeat(md5('asd'), 4096); // 128k (redis.h REDIS_INLINE_MAX_SIZE = 64k)
     $this->assertTrue($this->credis->set('long', $longString));
     $this->assertEquals($longString, $this->credis->get('long'));
   }
@@ -109,6 +111,11 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->assertEquals(array('foo','Hello',FALSE), $this->credis->hMGet('hash', array('field1','field2','nilfield')));
     $this->assertEquals(array(), $this->credis->hGetAll('nohash'));
     $this->assertEquals(array('field1' => 'foo', 'field2' => 'Hello', 'field3' => 'World'), $this->credis->hGetAll('hash'));
+
+    // Test long hash values
+    $longString = str_repeat(md5('asd'), 4096); // 128k (redis.h REDIS_INLINE_MAX_SIZE = 64k)
+    $this->assertEquals(1, $this->credis->hMSet('long_hash', array('count' => 1, 'data' => $longString)), 'Set long hash value');
+    $this->assertEquals($longString, $this->credis->hGet('long_hash', 'data'), 'Get long hash value');
   }
 
   public function testFalsey()
@@ -167,7 +174,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
   public function testServer()
   {
-    $this->assertTrue(array_key_exists('used_memory', $this->credis->info()));
-    $this->assertTrue(array_key_exists('maxmemory', $this->credis->config('GET', 'maxmemory')));
+    $this->assertArrayHasKey('used_memory', $this->credis->info());
+    $this->assertArrayHasKey('maxmemory', $this->credis->config('GET', 'maxmemory'));
   }
 }

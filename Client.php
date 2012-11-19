@@ -683,6 +683,9 @@ class Credis_Client {
                 $lines = explode(CRLF, trim($response,CRLF));
                 $response = array();
                 foreach($lines as $line) {
+                    if ( ! $line || substr($line, 0, 1) == '#') {
+                      continue;
+                    }
                     list($key, $value) = explode(':', $line, 2);
                     $response[$key] = $value;
                 }
