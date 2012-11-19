@@ -18,6 +18,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
       $configFile = dirname(__FILE__).'/test_config.json';
       if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
         $this->markTestSkipped('Could not load '.$configFile);
+        return;
       }
       $this->config = json_decode($config);
     }
@@ -43,6 +44,17 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->credis->set('foo','FOO');
     $this->assertTrue($this->credis->flushDb());
     $this->assertFalse($this->credis->get('foo'));
+  }
+
+  public function testReadTimeout()
+  {
+    $this->credis->setReadTimeout(0.0001);
+    try {
+      $this->credis->save();
+      $this->fail('Expected exception (read should timeout since disk sync should take longer than 0.0001 seconds).');
+    } catch(CredisException $e) {
+    }
+    $this->credis->setReadTimeout(10);
   }
 
   public function testScalars()
