@@ -70,7 +70,7 @@ The `uncork` method returns an array of the responses of the pipelined commands.
 ### Example
 
 ```php
-$redis = new redisent\Redis();
+$redis = new Redisent\Redis();
 $responses = $redis->pipeline()
     ->incr('X')
     ->incr('X')
