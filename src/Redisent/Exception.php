@@ -7,8 +7,6 @@
 
 namespace Redisent;
 
-use Exception;
-
-class Exception extends Exception
+class Exception extends \Exception
 {
 }
