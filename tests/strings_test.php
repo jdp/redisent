@@ -1,15 +1,15 @@
 <?php
-namespace redisent\tests;
+namespace Redisent\tests;
 
 require_once __DIR__.'/../simpletest/autorun.php';
-require_once __DIR__.'/../src/redisent/Redis.php';
+require_once __DIR__.'/../src/Redisent/Redis.php';
 
 class StringsTest extends \UnitTestCase {
 
   private $dsn = 'redis://localhost/';
   
   function setUp() {
-    $this->r = new \redisent\Redis($this->dsn);
+    $this->r = new \Redisent\Redis($this->dsn);
     $this->assertIsA($this->r, 'redisent\Redis');
   }
 

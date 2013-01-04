@@ -1,5 +1,5 @@
 <?php
-namespace redisent\tests;
+namespace Redisent\tests;
 
 require_once __DIR__.'/../simpletest/autorun.php';
 require_once __DIR__.'/strings_test.php';
