@@ -1,7 +1,7 @@
 {
-    "name": "redisent/redisent",
-    "description": "Redisent",
-    "keywords": ["redis"],
+    "name": "redisent/redis",
+    "description": "A simple, no-nonsense interface to the Redis for modest developers. It is designed to be flexible and tolerant of changes to the Redis protocol",
+    "keywords": ["redis","redisent","nosql","key value store"],
     "type": "library",
     "homepage": "https://github.com/jdp/redisent",
     "license": "ISC",
@@ -9,13 +9,17 @@
         {
             "name": "Justin Poliey",
             "homepage": "http://justinpoliey.com/"
-        }
+        },
+        {
+            "name": "Mardix",
+            "homepage": "http://github.com/mardix",
+            "role": "Developer"
+        } 
     ],
     "require": {
-        "php": ">=5.3.0",
-        "ext-sockets": "*"
+        "php": ">=5.3.0"
     },
     "autoload": {
-        "classmap": ["src"]
+         "psr-0": { "Redisent": "src/" }
     }
 }
