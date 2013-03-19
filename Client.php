@@ -164,6 +164,11 @@ class Credis_Client {
     /**
      * @var bool
      */
+    protected $closeOnDestruct = TRUE;
+
+    /**
+     * @var bool
+     */
     protected $connected = FALSE;
 
     /**
@@ -242,7 +247,9 @@ class Credis_Client {
 
     public function __destruct()
     {
-        $this->close();
+        if ($this->closeOnDestruct) {
+            $this->close();
+        }
     }
 
     /**
@@ -265,6 +272,16 @@ class Credis_Client {
     public function setMaxConnectRetries($retries)
     {
         $this->maxConnectRetries = $retries;
+        return $this;
+    }
+
+    /**
+     * @param bool $flag
+     * @return Credis_Client
+     */
+    public function setCloseOnDestruct($flag)
+    {
+        $this->closeOnDestruct = $flag;
         return $this;
     }
 
