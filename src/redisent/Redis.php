@@ -30,6 +30,13 @@ class Redis {
 	private $__sock;
 
 	/**
+	 * Whether the connection is to be persistent or not
+	 * @var boolean
+	 * @access private
+	 */
+	private $__sockIsPersistent;
+
+	/**
 	 * The structure representing the data source of the Redis server
 	 * @var array
 	 * @access public
@@ -58,10 +65,14 @@ class Redis {
 	 */
 	function __construct($dsn = 'redis://localhost:6379', $timeout = null) {
 		$this->dsn = parse_url($dsn);
+		$this->__sockIsPersistent = !empty($this->dsn['fragment']) && $this->dsn['fragment'] == 'persistent';
 		$host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
 		$port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
 		$timeout = $timeout ?: ini_get("default_socket_timeout");
-		$this->__sock = @fsockopen($host, $port, $errno, $errstr, $timeout);
+		$this->__sock = $this->__sockIsPersistent ?
+			@pfsockopen($host, $port, $errno, $errstr, $timeout) :
+			@fsockopen($host, $port, $errno, $errstr, $timeout);
+
 		if ($this->__sock === FALSE) {
 			throw new \Exception("{$errno} - {$errstr}");
 		}
@@ -71,7 +82,9 @@ class Redis {
 	}
 
 	function __destruct() {
-		fclose($this->__sock);
+		if ($this->__sockIsPersistent == false) {
+			fclose($this->__sock);
+		}
 	}
 
 	/**
