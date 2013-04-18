@@ -80,6 +80,14 @@ class CredisException extends Exception {
  * @method array         sUnion(mixed $keyOrArray, string $valueN = null)
  * @method array         sInter(mixed $keyOrArray, string $valueN = null)
  * @method array         sDiff(mixed $keyOrArray, string $valueN = null)
+ * @method string        sPop(string $key)
+ * @method int           sCard(string $key)
+ * @method int           sIsMember(string $key, string $member)
+ * @method int           sMove(string $source, string $dest, string $member)
+ * @method string|array  sRandMember(string $key, int $count = null)
+ * @method int           sUnionStore(string $dest, string $key1, string $key2 = null)
+ * @method int           sInterStore(string $dest, string $key1, string $key2 = null)
+ * @method int           sDiffStore(string $dest, string $key1, string $key2 = null)
  *
  * Hashes:
  * @method bool|int      hSet(string $key, string $field, string $value)
@@ -113,6 +121,17 @@ class CredisException extends Exception {
  * @method string|null   rPoplPush(string $source, string $destination)
  * @method int           rPush(string $key, mixed $value, mixed $valueN = null)
  * @method int           rPushX(string $key, mixed $value)
+ *
+ * Sorted Sets:
+ * TODO
+ *
+ * Pub/Sub
+ * TODO
+ *
+ * Scripting:
+ * @method string|int    script(string $command, string $arg1 = null)
+ * @method string|int|array|bool eval(string $script, int $numkeys, string $key = null, string $arg = null)
+ * @method string|int|array|bool evalSha(string $sha1, int $numkeys, string $key = null, string $arg = null)
  */
 class Credis_Client {
 
