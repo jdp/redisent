@@ -130,8 +130,8 @@ class CredisException extends Exception {
  *
  * Scripting:
  * @method string|int    script(string $command, string $arg1 = null)
- * @method string|int|array|bool eval(string $script, int $numkeys, string $key = null, string $arg = null)
- * @method string|int|array|bool evalSha(string $sha1, int $numkeys, string $key = null, string $arg = null)
+ * @method string|int|array|bool eval(string $script, array $keys = NULL, array $args = NULL)
+ * @method string|int|array|bool evalSha(string $script, array $keys = NULL, array $args = NULL)
  */
 class Credis_Client {
 
@@ -575,6 +575,24 @@ class Credis_Client {
                     break;
                 case 'lrem':
                     $args = array($args[0], $args[2], $args[1]);
+                    break;
+                case 'eval':
+                case 'evalsha':
+                    if (is_array($args[1])) {
+                        $cKeys = $args[1];
+                    } elseif (is_string($args[1])) {
+                        $cKeys = array($args[1]);
+                    } else {
+                        $cKeys = array();
+                    }
+                    if (is_array($args[2])) {
+                        $cArgs = $args[2];
+                    } elseif (is_string($args[2])) {
+                        $cArgs = array($args[2]);
+                    } else {
+                        $cArgs = array();
+                    }
+                    $args = array($args[0], array_merge($cKeys, $cArgs), count($cKeys));
                     break;
                 default:
                     // Flatten arguments
