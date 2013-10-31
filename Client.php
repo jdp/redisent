@@ -451,6 +451,15 @@ class Credis_Client {
         // Send request via native PHP
         if($this->standalone)
         {
+            switch ($name) {
+                case 'eval':
+                case 'evalsha':
+                    $script = array_shift($args);
+                    $keys = (array) array_shift($args);
+                    $eArgs = (array) array_shift($args);
+                    $args = array($script, count($keys), $keys, $eArgs);
+                    break;
+            }
             // Flatten arguments
             $argsFlat = NULL;
             foreach($args as $index => $arg) {
