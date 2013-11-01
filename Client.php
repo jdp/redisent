@@ -652,10 +652,19 @@ class Credis_Client {
                 }
 
                 $response = call_user_func_array(array($this->redis, $name), $args);
+
+                // Handle scripting errors
+                if ($name == 'eval' || $name == 'evalsha' || $name == 'script') {
+                    $error = $this->redis->getLastError();
+                    $this->redis->clearLastError();
+                    if ($error) {
+                        throw new CredisException($error);
+                    }
+                }
             }
             // Wrap exceptions
             catch(RedisException $e) {
-                throw new CredisException($e->getMessage(), $e->getCode());
+                throw new CredisException($e->getMessage(), $e->getCode(), $e);
             }
 
             #echo "> $name : ".substr(print_r($response, TRUE),0,100)."\n";
