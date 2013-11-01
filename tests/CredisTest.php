@@ -189,4 +189,24 @@ class CredisTest extends PHPUnit_Framework_TestCase
     $this->assertArrayHasKey('used_memory', $this->credis->info());
     $this->assertArrayHasKey('maxmemory', $this->credis->config('GET', 'maxmemory'));
   }
+
+  public function testScripts()
+  {
+    $this->assertEquals(3, $this->credis->eval('return 3'));
+    $this->assertEquals('09d3822de862f46d784e6a36848b4f0736dda47a', $this->credis->script('load', 'return 3'));
+    $this->assertEquals(3, $this->credis->evalSha('09d3822de862f46d784e6a36848b4f0736dda47a'));
+
+    $this->credis->set('foo','FOO');
+    $this->assertEquals('FOOBAR', $this->credis->eval("return redis.call('get', KEYS[1])..ARGV[1]", 'foo', 'BAR'));
+
+    $this->assertEquals(array(1,2,'three'), $this->credis->eval("return {1,2,'three'}"));
+    try {
+      $this->credis->eval('this-is-not-lua');
+      $this->fail('Expected exception on invalid script.');
+      $this->credis->evalSha('1111111111111111111111111111111111111111');
+      $this->fail('Expected exception on not-loaded script.');
+    } catch(CredisException $e) {
+    }
+  }
+
 }

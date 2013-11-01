@@ -587,16 +587,16 @@ class Credis_Client {
                     break;
                 case 'eval':
                 case 'evalsha':
-                    if (is_array($args[1])) {
+                    if (isset($args[1]) && is_array($args[1])) {
                         $cKeys = $args[1];
-                    } elseif (is_string($args[1])) {
+                    } elseif (isset($args[1]) && is_string($args[1])) {
                         $cKeys = array($args[1]);
                     } else {
                         $cKeys = array();
                     }
-                    if (is_array($args[2])) {
+                    if (isset($args[2]) && is_array($args[2])) {
                         $cArgs = $args[2];
-                    } elseif (is_string($args[2])) {
+                    } elseif (isset($args[2]) && is_string($args[2])) {
                         $cArgs = array($args[2]);
                     } else {
                         $cArgs = array();
