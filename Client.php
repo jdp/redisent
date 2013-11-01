@@ -736,8 +736,10 @@ class Credis_Client {
             case '-':
                 if($this->isMulti || $this->usePipeline) {
                     $response = FALSE;
+                } else if ($name == 'evalsha' && substr($reply,0,9) == '-NOSCRIPT') {
+                    $response = NULL;
                 } else {
-                    throw new CredisException(substr($reply, 4));
+                    throw new CredisException(substr($reply,0,4) == '-ERR' ? substr($reply, 5) : substr($reply,1));
                 }
                 break;
             /* Inline reply */

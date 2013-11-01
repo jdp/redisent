@@ -192,6 +192,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
   public function testScripts()
   {
+    $this->assertNull($this->credis->evalSha('1111111111111111111111111111111111111111'));
     $this->assertEquals(3, $this->credis->eval('return 3'));
     $this->assertEquals('09d3822de862f46d784e6a36848b4f0736dda47a', $this->credis->script('load', 'return 3'));
     $this->assertEquals(3, $this->credis->evalSha('09d3822de862f46d784e6a36848b4f0736dda47a'));
@@ -203,8 +204,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
     try {
       $this->credis->eval('this-is-not-lua');
       $this->fail('Expected exception on invalid script.');
-      $this->credis->evalSha('1111111111111111111111111111111111111111');
-      $this->fail('Expected exception on not-loaded script.');
     } catch(CredisException $e) {
     }
   }
