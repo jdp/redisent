@@ -652,15 +652,6 @@ class Credis_Client {
                 }
 
                 $response = call_user_func_array(array($this->redis, $name), $args);
-
-                // Handle scripting errors
-                if ($name == 'eval' || $name == 'evalsha' || $name == 'script') {
-                    $error = $this->redis->getLastError();
-                    $this->redis->clearLastError();
-                    if ($error) {
-                        throw new CredisException($error);
-                    }
-                }
             }
             // Wrap exceptions
             catch(RedisException $e) {
@@ -675,6 +666,7 @@ class Credis_Client {
                 case 'hmget':
                     $response = array_values($response);
                     break;
+
                 case 'type':
                     $typeMap = array(
                       self::TYPE_NONE,
@@ -685,6 +677,19 @@ class Credis_Client {
                       self::TYPE_HASH,
                     );
                     $response = $typeMap[$response];
+                    break;
+
+                // Handle scripting errors
+                case 'eval':
+                case 'evalsha':
+                case 'script':
+                    $error = $this->redis->getLastError();
+                    $this->redis->clearLastError();
+                    if ($error && substr($error,0,8) == 'NOSCRIPT') {
+                        $response = NULL;
+                    } else if ($error) {
+                        throw new CredisException($error);
+                    }
                     break;
             }
         }
