@@ -118,9 +118,10 @@ class Redis {
 		/* Build the Redis unified protocol command */
 		$crlf = "\r\n";
 		array_unshift($args, strtoupper($name));
-		$command = sprintf('*%d%s%s%s', count($args), $crlf, implode(array_map(function($arg) use($crlf) {
-			return sprintf('$%d%s%s', strlen($arg), $crlf, $arg);
-		}, $args), $crlf), $crlf);
+		$command = '*' . count($args) . $crlf;
+		foreach ($args as $arg) {
+			$command .= '$' . strlen($arg) . $crlf . $arg . $crlf;
+		}
 
 		/* Add it to the pipeline queue */
 		$this->queue[] = $command;
