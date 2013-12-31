@@ -3,12 +3,12 @@
     "description": "A simple, no-nonsense interface to the Redis for modest developers. It is designed to be flexible and tolerant of changes to the Redis protocol",
     "keywords": ["redis","redisent","nosql","key value store"],
     "type": "library",
-    "homepage": "https://github.com/jdp/redisent",
+    "homepage": "https://github.com/mardix/redisent",
     "license": "ISC",
     "authors": [
         {
             "name": "Justin Poliey",
-            "homepage": "http://justinpoliey.com/"
+            "homepage": "https://github.com/jdp/redisent"
         },
         {
             "name": "Mardix",
