@@ -7,15 +7,16 @@ library when available for better performance. This project was forked from one 
 
 Credis uses methods named the same as Redis commands, and translates return values to the appropriate PHP equivalents.
 
-    require 'Credis/Client.php';
-    $redis = new Credis_Client('localhost');
-    $redis->set('awesome', 'absolutely');
-    echo sprintf('Is Credis awesome? %s.\n', $redis->get('awesome'));
+```php
+require 'Credis/Client.php';
+$redis = new Credis_Client('localhost');
+$redis->set('awesome', 'absolutely');
+echo sprintf('Is Credis awesome? %s.\n', $redis->get('awesome'));
 
-    // When arrays are given as arguments they are flattened automatically
-    $redis->rpush('particles', array('proton','electron','neutron'));
-    $particles = $redis->lrange('particles', 0, -1);
-
+// When arrays are given as arguments they are flattened automatically
+$redis->rpush('particles', array('proton','electron','neutron'));
+$particles = $redis->lrange('particles', 0, -1);
+```
 Redis error responses will be wrapped in a CredisException class and thrown.
 
 ## Clustering your servers
@@ -24,15 +25,17 @@ Credis also includes a way for developers to fully utilize the scalability of Re
 Using the Credis_Cluster class, you can use Credis the same way, except that keys will be hashed across multiple servers.
 Here is how to set up a cluster:
 
-    require 'Credis/Client.php';
-    require 'Credis/Cluster.php';
+```php
+require 'Credis/Client.php';
+require 'Credis/Cluster.php';
 
-    $cluster = new Credis_Cluster(array(
-	    'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
-	    'beta'  => array('host' => '127.0.0.1', 'port' => 6380),
-    ));
-    $cluster->set('key','value');
-    $cluster->to('alpha')->info();
+$cluster = new Credis_Cluster(array(
+    'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
+    'beta'  => array('host' => '127.0.0.1', 'port' => 6380),
+));
+$cluster->set('key','value');
+$cluster->to('alpha')->info();
+```
 
 ## About
 
