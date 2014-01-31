@@ -69,7 +69,7 @@ class Credis_Cluster
     $clientNum = 0;
     foreach ($servers as $server)
     {
-      $client = new Credis_Client($server['host'], $server['port'], isset($server['timeout']) ? $server['timeout'] : 2.5);
+      $client = new Credis_Client($server['host'], $server['port'], isset($server['timeout']) ? $server['timeout'] : 2.5, isset($server['persistent']) ? $server['persistent'] : '');
       $this->clients[] = $client;
       if (isset($server['alias'])) {
         $this->aliases[$server['alias']] = $client;
@@ -82,7 +82,7 @@ class Credis_Cluster
     ksort($this->ring, SORT_NUMERIC);
     $this->nodes = array_keys($this->ring);
     $this->dont_hash = array_flip(array(
-      'RANDOMKEY', 'DBSIZE',
+      'RANDOMKEY', 'DBSIZE', 'PIPELINE', 'EXEC',
       'SELECT',    'MOVE',    'FLUSHDB',  'FLUSHALL',
       'SAVE',      'BGSAVE',  'LASTSAVE', 'SHUTDOWN',
       'INFO',      'MONITOR', 'SLAVEOF'
