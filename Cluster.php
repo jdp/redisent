@@ -82,7 +82,7 @@ class Credis_Cluster
     ksort($this->ring, SORT_NUMERIC);
     $this->nodes = array_keys($this->ring);
     $this->dont_hash = array_flip(array(
-      'RANDOMKEY', 'DBSIZE',
+      'RANDOMKEY', 'DBSIZE', 'PIPELINE', 'EXEC',
       'SELECT',    'MOVE',    'FLUSHDB',  'FLUSHALL',
       'SAVE',      'BGSAVE',  'LASTSAVE', 'SHUTDOWN',
       'INFO',      'MONITOR', 'SLAVEOF'
