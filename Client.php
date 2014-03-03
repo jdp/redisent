@@ -142,7 +142,6 @@ class Credis_Client {
     const TYPE_HASH        = 'hash';
     const TYPE_NONE        = 'none';
     const FREAD_BLOCK_SIZE = 8192;
-
     /**
      * Socket connection to the Redis server or Redis library instance
      * @var resource|Redis
@@ -254,14 +253,23 @@ class Credis_Client {
      * @param integer $port The port number of the Redis server
      * @param float $timeout  Timeout period in seconds
      * @param string $persistent  Flag to establish persistent connection
+     * @param int $db The selected datbase of the Redis server
+     * @param string $password The authentication password of the Redis server
      */
-    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $persistent = '')
+    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $persistent = '', $db = 0, $password = null)
     {
         $this->host = (string) $host;
         $this->port = (int) $port;
         $this->timeout = $timeout;
         $this->persistent = (string) $persistent;
         $this->standalone = ! extension_loaded('redis');
+
+        if($password !== null) {
+            $this->auth($password);
+        }
+        if($db !== 0) {
+            $this->select($db);
+        }
     }
 
     public function __destruct()

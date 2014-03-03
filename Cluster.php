@@ -21,7 +21,11 @@ class Credis_Cluster
    * @var Credis_Client[]
    */
   protected $clients;
-  
+  /**
+   * If a server is set as master, all write commands go to that one
+   * @var Credis_Client
+   */
+  protected $masterClient;
   /**
    * Aliases of Credis_Client objects attached to Redis servers, used to route commands to specific servers
    * @see Credis_Cluster::to
@@ -54,8 +58,12 @@ class Credis_Cluster
    *  array(
    *   'host' => hostname,
    *   'port' => port,
+   *   'db' => db,
+   *   'password' => password,
    *   'timeout' => timeout,
-   *   'alias' => alias
+   *   'alias' => alias,
+   *   'persistent' => persistent,
+   *   'master' => master
    * )
    *
    * @param array $servers The Redis servers in the cluster.
@@ -64,18 +72,29 @@ class Credis_Cluster
   public function __construct($servers, $replicas = 128)
   {
     $this->clients = array();
+    $this->masterClient = null;
     $this->aliases = array();
     $this->ring = array();
     $clientNum = 0;
     foreach ($servers as $server)
     {
-      $client = new Credis_Client($server['host'], $server['port'], isset($server['timeout']) ? $server['timeout'] : 2.5, isset($server['persistent']) ? $server['persistent'] : '');
+      $client = new Credis_Client(
+          $server['host'],
+          $server['port'],
+          isset($server['timeout']) ? $server['timeout'] : 2.5,
+          isset($server['persistent']) ? $server['persistent'] : '',
+          isset($server['db']) ? $server['db'] : 0,
+          isset($server['password']) ? $server['password'] : null
+      );
+      if(isset($server['master']) && $server['master'] === true){
+        $this->masterClient = $client;
+      }
       $this->clients[] = $client;
       if (isset($server['alias'])) {
         $this->aliases[$server['alias']] = $client;
       }
       for ($replica = 0; $replica <= $replicas; $replica++) {
-        $this->ring[crc32($server['host'].':'.$server['port'].'-'.$replica)] = $clientNum;
+        $this->ring[md5($server['host'].':'.$server['port'].'-'.$replica)] = $clientNum;
       }
       $clientNum++;
     }
@@ -171,7 +190,7 @@ class Credis_Cluster
    */
   public function hash($key)
   {
-    $needle = crc32($key);
+    $needle = md5($key);
     $server = $min = 0;
     $max = count($this->nodes) - 1;
     while ($max >= $min) {
@@ -190,5 +209,20 @@ class Credis_Cluster
     return $this->ring[$server];
   }
 
+   /**
+    * @param $command
+    * @return bool
+    */
+    protected function _isWriteCommand($command)
+  {
+    $writeCommands = array(
+        'APPEND', 'DECR', 'DECRBY', 'GETSET', 'INCR', 'INCRBY', 'INCRBYFLOAT', 'MSET', 'MSETNX', 'SET', 'SETBIT', 'SETEX',
+        'PSETEX', 'SETNX', 'SETRANGE', 'DEL', 'DELETE', 'EXPIRE', 'SETTIMEOUT', 'PEXPIRE', 'EXPIREAT', 'PEXPIREAT', 'MOVE',
+        'PERSIST', 'RENAME', 'RENAMEKEY', 'RENAMENX', 'SORT', 'RESTORE', 'HDEL', 'HINCRBY', 'HINCRBYFLOAT', 'HMSET', 'HSET',
+        'HSETNX', 'BLPOP', 'BRPOP', 'BRPOPLPUSH', 'LINSERT', 'LPOP', 'LPUSH', 'LPUSHX', 'LREM', 'LREMOVE', 'LSET', 'LTRIM',
+        'LISTTRIM', 'RPOP', 'RPOPLPUSH', 'RPUSH', 'RPUSHX', 'SADD'
+    );
+    return in_array($command,$writeCommands);
+  }
 }
 
