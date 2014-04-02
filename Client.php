@@ -278,7 +278,22 @@ class Credis_Client {
             $this->close();
         }
     }
-
+    /**
+     * Return the host of the Redis instance
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->host;
+    }
+    /**
+     * Return the port of the Redis instance
+     * @return int
+     */
+    public function getPort()
+    {
+        return $this->port;
+    }
     /**
      * @throws CredisException
      * @return Credis_Client
