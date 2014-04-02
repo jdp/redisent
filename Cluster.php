@@ -100,7 +100,7 @@ class Credis_Cluster
         $this->aliases[$server['alias']] = $client;
       }
       for ($replica = 0; $replica <= $replicas; $replica++) {
-        $this->ring[crc32($server['host'].':'.$server['port'].'-'.$replica)] = $clientNum;
+        $this->ring[md5($server['host'].':'.$server['port'].'-'.$replica)] = $clientNum;
       }
       $clientNum++;
     }
@@ -198,7 +198,7 @@ class Credis_Cluster
    */
   public function hash($key)
   {
-    $needle = crc32($key);
+    $needle = md5($key);
     $server = $min = 0;
     $max = count($this->nodes) - 1;
     while ($max >= $min) {
