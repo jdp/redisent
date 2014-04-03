@@ -2,39 +2,26 @@
 class Credis_Sentinel
 {
     /**
-     * @var Credis_Client[]
+     * @var Credis_Client
      */
-    protected $_clients;
+    protected $_client;
     /**
      * Should the master be used for read queries too?
      * @var bool
      */
     protected $_readOnMaster = true;
     /**
-     * @param Credis_Client[] $clients
+     * @param Credis_Client $client
      * @param bool $readOnMaster
      */
-    public function __construct($clients, $readOnMaster=true)
+    public function __construct(Credis_Client $client, $readOnMaster=true)
     {
-        if(!is_array($clients)) {
-            throw new CredisException('Clients should be an array, got '.gettype($clients));
+        if(!$client instanceof Credis_Client){
+            throw new CredisException('Sentinel client should be an instance of Credis_Client');
         }
-        foreach($clients as $client){
-            if(!$client instanceof Credis_Client){
-                throw new CredisException('Sentinel client should be an instance of Credis_Client');
-            }
-            $client->forceStandalone();
-        }
-        $this->_clients = $clients;
+        $client->forceStandalone();
+        $this->_client = $client;
         $this->_readOnMaster = (bool)$readOnMaster;
-    }
-
-    /**
-     * @return Credis_Client
-     */
-    protected function _getRandomSentinelClient()
-    {
-        return $this->_clients[rand(0,count($this->_clients)-1)];
     }
     /**
      * @param string $name
@@ -73,16 +60,6 @@ class Credis_Sentinel
         return $workingSlaves;
     }
     /**
-     * @param string $name
-     * @return Credis_Client
-     */
-    public function getRandomSlaveClient($name)
-    {
-        $slaves = $this->getSlaveClients($name);
-        return $slaves[rand(0,count($slaves)-1)];
-    }
-
-    /**
      * Returns a Redis cluster object containing all slaves and the master
      * @param string $name
      * @return Credis_Cluster
@@ -105,7 +82,7 @@ class Credis_Sentinel
      */
     public function getMasters()
     {
-        return $this->_getRandomSentinelClient()->sentinel('masters');
+        return $this->_client->sentinel('masters');
     }
     /**
      * @param string $name
@@ -113,7 +90,7 @@ class Credis_Sentinel
      */
     public function getSlaves($name)
     {
-        return $this->_getRandomSentinelClient()->sentinel('slaves',$name);
+        return $this->_client->sentinel('slaves',$name);
     }
     /**
      * @param string $name
@@ -121,7 +98,7 @@ class Credis_Sentinel
      */
     public function getMaster($name)
     {
-        return $this->_getRandomSentinelClient()->sentinel('master',$name);
+        return $this->_client->sentinel('master',$name);
     }
     /**
      * @param string $name
@@ -129,7 +106,7 @@ class Credis_Sentinel
      */
     public function getMasterAddressByName($name)
     {
-        return $this->_getRandomSentinelClient()->sentinel('get-master-addr-by-name',$name);
+        return $this->_client->sentinel('get-master-addr-by-name',$name);
     }
     /**
      * @param string $name
@@ -137,7 +114,7 @@ class Credis_Sentinel
      */
     public function ping()
     {
-        return $this->_getRandomSentinelClient()->ping();
+        return $this->_client->ping();
     }
     /**
      * @param string $name
@@ -145,6 +122,6 @@ class Credis_Sentinel
      */
     public function failover($name)
     {
-        return $this->_getRandomSentinelClient()->sentinel('failover',$name);
+        return $this->_client->sentinel('failover',$name);
     }
 }

@@ -6,8 +6,7 @@ require(dirname(__DIR__).'/Sentinel.php');
 require(dirname(__DIR__).'/Rwsplit.php');
 require(dirname(__DIR__).'/Cluster.php');
 
-$sentinelClient = array(new Credis_Client('127.0.0.1',26379));
-$sentinel = new Credis_Sentinel($sentinelClient,true);
+$sentinel = new Credis_Sentinel(new Credis_Client('127.0.0.1',26379),true);
 $cluster = $sentinel->getCluster('mymaster');
 $key = 'key'.rand(0,100);
 $value = 'value'.rand(0,100);
