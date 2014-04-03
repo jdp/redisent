@@ -128,7 +128,6 @@ class Credis_Sentinel
         if(strstr($master[9],'s_down') || strstr($master[9],'disconnected')) {
             throw new CredisException('The master is down');
         }
-        $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
         $slaves = $this->slaves($name);
         foreach($slaves as $slave){
             if(!strstr($slave[9],'s_down') && !strstr($slave[9],'disconnected')) {
@@ -137,11 +136,16 @@ class Credis_Sentinel
         }
         if(count($workingClients)>0){
             if($selectRandomSlave){
+                if($readOnMaster){
+                    $readOnMaster = false;
+                    $workingClients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>false);
+                }
                 $clients[] = $workingClients[rand(0,count($workingClients)-1)];
             } else {
-                $clients[] = $workingClients;
+                $clients = $workingClients;
             }
         }
+        $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
         return new Credis_Cluster($clients,0,$readOnMaster);
     }
     /**
