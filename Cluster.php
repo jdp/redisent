@@ -52,12 +52,6 @@ class Credis_Cluster
    */
   protected $dont_hash;
   /**
-   * If false, we use hashing. If true, we randomly select a node
-   * @var bool
-   */
-   protected $randomRetrieval = false;
-
-  /**
    * Creates an interface to a cluster of Redis servers
    * Each server should be in the format:
    *  array(
@@ -74,13 +68,12 @@ class Credis_Cluster
    * @param array $servers The Redis servers in the cluster.
    * @param int $replicas
    */
-  public function __construct($servers, $replicas = 128, $randomRetrieval = false)
+  public function __construct($servers, $replicas = 128)
   {
     $this->clients = array();
     $this->masterClient = null;
     $this->aliases = array();
     $this->ring = array();
-    $this->randomRetrieval = (bool) $randomRetrieval;
     $clientNum = 0;
     foreach ($servers as $server)
     {
@@ -181,8 +174,8 @@ class Credis_Cluster
     if($this->masterClient instanceof Credis_Client && !Credis_Rwsplit::isReadOnlyCommand($name)){
         return $this->masterClient->__call($name, $args);
     }
-    if (isset($this->dont_hash[strtoupper($name)]) || $this->randomRetrieval) {
-      $client = $this->clients[rand(0,count($this->clients)-1)];
+    if (isset($this->dont_hash[strtoupper($name)])) {
+      $client = $this->clients[0];
     }
     else {
       $client = $this->byHash($args[0]);
