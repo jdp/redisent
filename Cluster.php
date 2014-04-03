@@ -51,6 +51,7 @@ class Credis_Cluster
    * @access protected
    */
   protected $dont_hash;
+
   /**
    * Creates an interface to a cluster of Redis servers
    * Each server should be in the format:
@@ -67,8 +68,9 @@ class Credis_Cluster
    *
    * @param array $servers The Redis servers in the cluster.
    * @param int $replicas
+   * @param bool $readOnMaster
    */
-  public function __construct($servers, $replicas = 128)
+  public function __construct($servers, $replicas = 128, $readOnMaster = false)
   {
     $this->clients = array();
     $this->masterClient = null;
@@ -78,22 +80,26 @@ class Credis_Cluster
     foreach ($servers as $server)
     {
       $client = new Credis_Client(
-          $server['host'],
-          $server['port'],
-          isset($server['timeout']) ? $server['timeout'] : 2.5,
-          isset($server['persistent']) ? $server['persistent'] : '',
-          isset($server['db']) ? $server['db'] : 0,
-          isset($server['password']) ? $server['password'] : null
+        $server['host'],
+        $server['port'],
+        isset($server['timeout']) ? $server['timeout'] : 2.5,
+        isset($server['persistent']) ? $server['persistent'] : '',
+        isset($server['db']) ? $server['db'] : 0,
+        isset($server['password']) ? $server['password'] : null
       );
-      if(isset($server['master']) && $server['master'] === true){
-        $this->masterClient = $client;
-      }
-      $this->clients[] = $client;
       if (isset($server['alias'])) {
         $this->aliases[$server['alias']] = $client;
       }
+      if(isset($server['master']) && $server['master'] === true){
+        $this->masterClient = $client;
+        if(!$readOnMaster){
+            continue;
+        }
+      }
+      $this->clients[] = $client;
       for ($replica = 0; $replica <= $replicas; $replica++) {
-        $this->ring[md5($server['host'].':'.$server['port'].'-'.$replica)] = $clientNum;
+          $md5num = hexdec(substr(md5($server['host'].':'.$server['port'].'-'.$replica),0,7));
+          $this->ring[$md5num] = $clientNum;
       }
       $clientNum++;
     }
@@ -191,7 +197,7 @@ class Credis_Cluster
    */
   public function hash($key)
   {
-    $needle = md5($key);
+    $needle = hexdec(substr(md5($key),0,7));
     $server = $min = 0;
     $max = count($this->nodes) - 1;
     while ($max >= $min) {
