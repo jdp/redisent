@@ -1,7 +1,23 @@
 <?php
+/**
+ * Credis_Sentinel
+ *
+ * Implements the Sentinel API as mentioned on http://redis.io/topics/sentinel.
+ * Sentinel is aware of master and slave nodes in a cluster and returns instances of Credis_Client accordingly.
+ *
+ * The complexity of read/write splitting can also be abstract by calling the createCluster() method which returns a
+ * Credis_Cluster object that contains both the master server and a random slave. Credis_Cluster takes care of the
+ * read/write splitting
+ *
+ * @author Thijs Feryn <thijs@feryn.eu>
+ * @license http://www.opensource.org/licenses/mit-license.php The MIT License
+ * @package Credis_Sentinel
+ */
 class Credis_Sentinel
 {
     /**
+     * Contains a client that connects to a Sentinel node.
+     * Sentinel uses the same protocol as Redis which makes using Credis_Client convenient.
      * @var Credis_Client
      */
     protected $_client;
@@ -11,6 +27,22 @@ class Credis_Sentinel
      */
     protected $_readOnMaster = true;
     /**
+     * Contains an active instance of Credis_Cluster per master pool
+     * @var Array
+     */
+    protected $_cluster = array();
+    /**
+     * Contains an active instance of Credis_Client representing a master
+     * @var Array
+     */
+    protected $_master = array();
+    /**
+     * Contains an array Credis_Client objects representing all slaves per master pool
+     * @var Array
+     */
+    protected $_slaves = array();
+    /**
+     * Connect with a Sentinel node. Sentinel will do the master and slave discovery
      * @param Credis_Client $client
      * @param bool $readOnMaster
      */
@@ -24,10 +56,11 @@ class Credis_Sentinel
         $this->_readOnMaster = (bool)$readOnMaster;
     }
     /**
+     * Discover the master node automatically and return an instance of Credis_Client that connects to the master
      * @param string $name
      * @return Credis_Client
      */
-    public function getMasterClient($name)
+    public function createMasterClient($name)
     {
         $master = $this->getMasterAddressByName($name);
         if(!isset($master[0]) || !isset($master[1])){
@@ -36,17 +69,30 @@ class Credis_Sentinel
         return new Credis_Client($master[0],$master[1]);
     }
     /**
+     * If a Credis_Client object exists for a master, return it. Otherwise create one and return it
+     * @param string $name
+     * @return Credis_Client
+     */
+    public function getMasterClient($name)
+    {
+        if(!isset($this->_master[$name])){
+            $this->_master[$name] = $this->createMasterClient($name);
+        }
+        return $this->_master[$name];
+    }
+    /**
+     * Discover the slave nodes automatically and return an array of Credis_Client objects
      * @param string $name
      * @return Credis_Client[]
      */
-    public function getSlaveClients($name)
+    public function createSlaveClients($name)
     {
-        $slaves = $this->getSlaves($name);
+        $slaves = $this->slaves($name);
         if(!is_array($slaves) && count($slaves) == 0){
             throw new CredisException('No slaves found');
         }
         if($this->_readOnMaster){
-            $slaves[] = $this->getMaster($name);
+            $slaves[] = $this->master($name);
         }
         $workingSlaves = array();
         foreach($slaves as $slave) {
@@ -60,17 +106,29 @@ class Credis_Sentinel
         return $workingSlaves;
     }
     /**
-     * Returns a Redis cluster object containing all slaves and the master
+     * If an array of Credis_Client objects exist for a set of slaves, return them. Otherwise create and return them
+     * @param string $name
+     * @return Credis_Client[]
+     */
+    public function getSlaveClients($name)
+    {
+        if(!isset($this->_slaves[$name])){
+            $this->_slaves[$name] = $this->createSlaveClients($name);
+        }
+        return $this->_slaves[$name];
+    }
+    /**
+     * Returns a Redis cluster object containing a random slave and the master
      * @param string $name
      * @return Credis_Cluster
      */
-    public function getCluster($name)
+    public function createCluster($name)
     {
         $clients = array();
         $workingClients = array();
-        $master = $this->getMaster($name);
+        $master = $this->master($name);
         $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
-        $slaves = $this->getSlaves($name);
+        $slaves = $this->slaves($name);
         foreach($slaves as $slave){
             if(!strstr($slave[9],'s_down') && !strstr($slave[9],'disconnected')) {
                 $workingClients[] =  array('host'=>$slave[3],'port'=>$slave[5],'master'=>false);
@@ -79,32 +137,59 @@ class Credis_Sentinel
         if(count($workingClients)>0){
             $clients[] = $workingClients[rand(0,count($workingClients)-1)];
         }
-        return new Credis_Cluster($clients,0,true);
+        return new Credis_Cluster($clients,0,$this->_readOnMaster);
     }
     /**
+     * If a Credis_Cluster object exists, return it. Otherwise create one and return it.
+     * @param string $name
+     * @return Credis_Cluster
+     */
+    public function getCluster($name)
+    {
+        if(!isset($this->_cluster[$name])){
+            $this->_cluster[$name] = $this->createCluster($name);
+        }
+        return $this->_cluster[$name];
+    }
+    /**
+     * Catch-all method
+     * @param string $name
+     * @param array $args
      * @return mixed
      */
-    public function getMasters()
+    public function __call($name, $args)
+    {
+        array_unshift($args,$name);
+        return call_user_func(array($this->_client,'sentinel'),$args);
+    }
+    /**
+     * Return information about all registered master servers
+     * @return mixed
+     */
+    public function masters()
     {
         return $this->_client->sentinel('masters');
     }
     /**
+     * Return all information for slaves that are associated with a single master
      * @param string $name
      * @return mixed
      */
-    public function getSlaves($name)
+    public function slaves($name)
     {
         return $this->_client->sentinel('slaves',$name);
     }
     /**
+     * Get the information for a specific master
      * @param string $name
      * @return mixed
      */
-    public function getMaster($name)
+    public function master($name)
     {
         return $this->_client->sentinel('master',$name);
     }
     /**
+     * Get the hostname and port for a specific master
      * @param string $name
      * @return mixed
      */
@@ -113,6 +198,7 @@ class Credis_Sentinel
         return $this->_client->sentinel('get-master-addr-by-name',$name);
     }
     /**
+     * Check if the Sentinel is still responding
      * @param string $name
      * @return mixed
      */
@@ -121,6 +207,7 @@ class Credis_Sentinel
         return $this->_client->ping();
     }
     /**
+     * Perform an auto-failover which will re-elect another master and make the current master a slave
      * @param string $name
      * @return mixed
      */
