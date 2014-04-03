@@ -22,11 +22,6 @@ class Credis_Sentinel
      */
     protected $_client;
     /**
-     * Should the master be used for read queries too?
-     * @var bool
-     */
-    protected $_readOnMaster = true;
-    /**
      * Contains an active instance of Credis_Cluster per master pool
      * @var Array
      */
@@ -44,16 +39,14 @@ class Credis_Sentinel
     /**
      * Connect with a Sentinel node. Sentinel will do the master and slave discovery
      * @param Credis_Client $client
-     * @param bool $readOnMaster
      */
-    public function __construct(Credis_Client $client, $readOnMaster=true)
+    public function __construct(Credis_Client $client)
     {
         if(!$client instanceof Credis_Client){
             throw new CredisException('Sentinel client should be an instance of Credis_Client');
         }
         $client->forceStandalone();
         $this->_client = $client;
-        $this->_readOnMaster = (bool)$readOnMaster;
     }
     /**
      * Discover the master node automatically and return an instance of Credis_Client that connects to the master
@@ -119,14 +112,22 @@ class Credis_Sentinel
     }
     /**
      * Returns a Redis cluster object containing a random slave and the master
+     * When $selectRandomSlave is true, only one random slave is passed.
+     * When $selectRandomSlave is false, all clients are passed and hashing is applied in Credis_Cluster
+     * When $readOnMaster is true, the master server will also be used for read commands.
      * @param string $name
+     * @param bool $selectRandomSlave
+     * @param bool $readOnMaster
      * @return Credis_Cluster
      */
-    public function createCluster($name)
+    public function createCluster($name, $selectRandomSlave=true, $readOnMaster=true)
     {
         $clients = array();
         $workingClients = array();
         $master = $this->master($name);
+        if(strstr($master[9],'s_down') || strstr($master[9],'disconnected')) {
+            throw new CredisException('The master is down');
+        }
         $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
         $slaves = $this->slaves($name);
         foreach($slaves as $slave){
@@ -135,19 +136,25 @@ class Credis_Sentinel
             }
         }
         if(count($workingClients)>0){
-            $clients[] = $workingClients[rand(0,count($workingClients)-1)];
+            if($selectRandomSlave){
+                $clients[] = $workingClients[rand(0,count($workingClients)-1)];
+            } else {
+                $clients[] = $workingClients;
+            }
         }
-        return new Credis_Cluster($clients,0,$this->_readOnMaster);
+        return new Credis_Cluster($clients,0,$readOnMaster);
     }
     /**
      * If a Credis_Cluster object exists, return it. Otherwise create one and return it.
      * @param string $name
+     * @param bool $selectRandomSlave
+     * @param bool $readOnMaster
      * @return Credis_Cluster
      */
-    public function getCluster($name)
+    public function getCluster($name, $selectRandomSlave=true, $readOnMaster=true)
     {
         if(!isset($this->_cluster[$name])){
-            $this->_cluster[$name] = $this->createCluster($name);
+            $this->_cluster[$name] = $this->createCluster($name, $selectRandomSlave, $readOnMaster);
         }
         return $this->_cluster[$name];
     }
