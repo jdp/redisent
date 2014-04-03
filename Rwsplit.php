@@ -1,7 +1,7 @@
 <?php
 class Credis_Rwsplit
 {
-    public static $commands = array(
+    protected static $_commands = array(
         'EXISTS',
         'TYPE',
         'KEYS',
@@ -60,6 +60,6 @@ class Credis_Rwsplit
      */
     public static function isReadOnlyCommand($command)
     {
-        return in_array(strtoupper($command),self::$commands);
+        return in_array(strtoupper($command),self::$_commands);
     }
 }
