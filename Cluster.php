@@ -15,7 +15,11 @@
  */
 class Credis_Cluster
 {
-
+  /**
+   * Enable debug mode?
+   * @var bool
+   */
+  protected $debug=false;
   /**
    * Collection of Credis_Client objects attached to Redis servers
    * @var Credis_Client[]
@@ -70,7 +74,7 @@ class Credis_Cluster
    * @param int $replicas
    * @param bool $readOnMaster
    */
-  public function __construct($servers, $replicas = 128, $readOnMaster = false)
+  public function __construct($servers, $replicas = 128, $readOnMaster = true)
   {
     $this->clients = array();
     $this->masterClient = null;
@@ -112,7 +116,16 @@ class Credis_Cluster
       'INFO',      'MONITOR', 'SLAVEOF'
     ));
   }
-
+  /**
+   * Enable or disable debug mode
+   * @param bool $debug
+   * @return $this
+   */
+  public function setDebug($debug=true)
+  {
+      $this->debug = (bool)$debug;
+      return $this;
+  }
   /**
    * Get a client by index or alias.
    *
@@ -178,6 +191,9 @@ class Credis_Cluster
   public function __call($name, $args)
   {
     if($this->masterClient instanceof Credis_Client && !Credis_Rwsplit::isReadOnlyCommand($name)){
+        if($this->debug){
+            echo $name.' '.implode(' ',$args).' ['.$this->masterClient->getHost().':'.$this->masterClient->getPort().']'.PHP_EOL;
+        }
         return $this->masterClient->__call($name, $args);
     }
     if (isset($this->dont_hash[strtoupper($name)])) {
@@ -185,6 +201,9 @@ class Credis_Cluster
     }
     else {
       $client = $this->byHash($args[0]);
+    }
+    if($this->debug){
+        echo $name.' '.implode(' ',$args).' ['.$client->getHost().':'.$client->getPort().']'.PHP_EOL;
     }
     return $client->__call($name, $args);
   }
