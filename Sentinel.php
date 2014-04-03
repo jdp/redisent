@@ -67,13 +67,17 @@ class Credis_Sentinel
     public function getCluster($name)
     {
         $clients = array();
+        $workingClients = array();
         $master = $this->getMaster($name);
         $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
         $slaves = $this->getSlaves($name);
         foreach($slaves as $slave){
             if(!strstr($slave[9],'s_down') && !strstr($slave[9],'disconnected')) {
-                $clients[] =  array('host'=>$slave[3],'port'=>$slave[5],'master'=>false);
+                $workingClients[] =  array('host'=>$slave[3],'port'=>$slave[5],'master'=>false);
             }
+        }
+        if(count($workingClients)>0){
+            $clients[] = $workingClients[rand(0,count($workingClients)-1)];
         }
         return new Credis_Cluster($clients,0,true);
     }
