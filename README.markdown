@@ -30,11 +30,11 @@ require 'Credis/Client.php';
 require 'Credis/Cluster.php';
 
 $cluster = new Credis_Cluster(array(
-    'alpha' => array('host' => '127.0.0.1', 'port' => 6379),
-    'beta'  => array('host' => '127.0.0.1', 'port' => 6380),
+    array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'alpha'),
+    array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'beta')
 ));
 $cluster->set('key','value');
-$cluster->to('alpha')->info();
+$cluster->alias('alpha')->info();
 ```
 
 ## About
