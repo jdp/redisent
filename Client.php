@@ -386,7 +386,7 @@ class Credis_Client {
             }
             $failures = $this->connectFailures;
             $this->connectFailures = 0;
-            throw new CredisException("Connection to Redis failed after $failures failures.");
+            throw new CredisException("Connection to Redis on {$this->host}:{$this->port} failed after $failures failures.");
         }
 
         $this->connectFailures = 0;
