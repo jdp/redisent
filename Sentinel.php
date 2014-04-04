@@ -118,9 +118,10 @@ class Credis_Sentinel
      * @param string $name
      * @param bool $selectRandomSlave
      * @param bool $readOnMaster
+     * @param bool $debug
      * @return Credis_Cluster
      */
-    public function createCluster($name, $selectRandomSlave=true, $readOnMaster=true)
+    public function createCluster($name, $selectRandomSlave=true, $readOnMaster=true, $debug=false)
     {
         $clients = array();
         $workingClients = array();
@@ -146,19 +147,20 @@ class Credis_Sentinel
             }
         }
         $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
-        return new Credis_Cluster($clients,0,$readOnMaster);
+        return new Credis_Cluster($clients,0,$readOnMaster,$debug);
     }
     /**
      * If a Credis_Cluster object exists, return it. Otherwise create one and return it.
      * @param string $name
      * @param bool $selectRandomSlave
      * @param bool $readOnMaster
+     * @param bool $debug
      * @return Credis_Cluster
      */
-    public function getCluster($name, $selectRandomSlave=true, $readOnMaster=true)
+    public function getCluster($name, $selectRandomSlave=true, $readOnMaster=true, $debug=false)
     {
         if(!isset($this->_cluster[$name])){
-            $this->_cluster[$name] = $this->createCluster($name, $selectRandomSlave, $readOnMaster);
+            $this->_cluster[$name] = $this->createCluster($name, $selectRandomSlave, $readOnMaster, $debug);
         }
         return $this->_cluster[$name];
     }
