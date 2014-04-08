@@ -21,8 +21,12 @@ class CredisTest extends PHPUnit_Framework_TestCase
         return;
       }
       $this->config = json_decode($config);
+      if(count($this->config) < 2) {
+          $this->markTestSkipped('Config file '.$configFile.' should contain at least 2 entries');
+          return;
+      }
     }
-    $this->credis = new Credis_Client($this->config->host, $this->config->port, $this->config->timeout);
+    $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout);
     if($this->useStandalone) {
       $this->credis->forceStandalone();
     } else if ( ! extension_loaded('redis')) {
@@ -33,7 +37,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
   protected function tearDown()
   {
     if($this->credis) {
-      $this->credis->flushDb();
+      $this->credis->flushAll();
       $this->credis->close();
       $this->credis = NULL;
     }
@@ -207,5 +211,44 @@ class CredisTest extends PHPUnit_Framework_TestCase
     } catch(CredisException $e) {
     }
   }
+
+  public function testPersistent()
+  {
+      $this->tearDown();
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,true);
+      $this->credis->connect();
+  }
+
+  public function testDb()
+  {
+      $this->tearDown();
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      $this->assertTrue($this->credis->set('database',1));
+      $this->credis->close();
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,0);
+      $this->assertFalse($this->credis->get('database'));
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      $this->assertEquals(1,$this->credis->get('database'));
+
+  }
+
+    public function testPassword()
+    {
+        $this->tearDown();
+        $this->assertObjectHasAttribute('password',$this->config[1]);
+        $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,$this->config[1]->password);
+        $this->assertInstanceOf('Credis_Client',$this->credis->connect());
+        $this->assertTrue($this->credis->set('key','value'));
+        $this->credis->close();
+        $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,'wrongpassword');
+        try{
+            $this->credis->connect();
+            $this->credis->set('key','value');
+            $this->fail('Expected exception on invalid password');
+        }catch (CredisException $e) {
+            echo $e;
+        }
+
+    }
 
 }
