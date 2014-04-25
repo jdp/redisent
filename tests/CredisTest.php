@@ -232,23 +232,20 @@ class CredisTest extends PHPUnit_Framework_TestCase
 
   }
 
-    public function testPassword()
-    {
-        $this->tearDown();
-        $this->assertObjectHasAttribute('password',$this->config[1]);
-        $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,$this->config[1]->password);
-        $this->assertInstanceOf('Credis_Client',$this->credis->connect());
-        $this->assertTrue($this->credis->set('key','value'));
-        $this->credis->close();
-        $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,'wrongpassword');
-        try{
-            $this->credis->connect();
-            $this->credis->set('key','value');
-            $this->fail('Expected exception on invalid password');
-        }catch (CredisException $e) {
-            echo $e;
-        }
-
-    }
+  public function testPassword()
+  {
+      $this->tearDown();
+      $this->assertObjectHasAttribute('password',$this->config[1]);
+      $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,$this->config[1]->password);
+      $this->assertInstanceOf('Credis_Client',$this->credis->connect());
+      $this->assertTrue($this->credis->set('key','value'));
+      $this->credis->close();
+      $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,'wrongpassword');
+      $this->credis->connect();
+      $this->assertFalse($this->credis->set('key','value'));
+      $this->assertFalse($this->credis->auth('anotherwrongpassword'));
+      $this->assertTrue($this->credis->auth('thepassword'));
+      $this->assertTrue($this->credis->set('key','value'));
+  }
 
 }
