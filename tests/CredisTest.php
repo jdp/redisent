@@ -28,12 +28,12 @@ class CredisTest extends PHPUnit_Framework_TestCase
         } else if ( ! extension_loaded('redis')) {
             $this->fail('The Redis extension is not loaded.');
         }
+        $this->credis->flushDb();
     }
 
     protected function tearDown()
     {
         if($this->credis) {
-            $this->credis->flushDb();
             $this->credis->close();
             $this->credis = NULL;
         }
@@ -57,9 +57,9 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->credis->setReadTimeout(10);
     }
 
-    public function testPHPRedisReadTimeout() {
+    public function testPHPRedisReadTimeout()
+    {
         try {
-            $this->credis->forceStandalone = false;
             $this->credis->setReadTimeout(-1);
         } catch(CredisException $e) {
             $this->fail('setReadTimeout should accept -1 as timeout value');
@@ -69,8 +69,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
             $this->fail('setReadTimeout should not accept values less than -1');
         } catch(CredisException $e) {
         }
-
-        $this->credis->setReadTimeout(10);
     }
 
     public function testScalars()
@@ -224,4 +222,47 @@ class CredisTest extends PHPUnit_Framework_TestCase
         }
     }
 
+    public function testPubsub()
+    {
+        $timeout = 2;
+        $time = time();
+        $this->credis->setReadTimeout($timeout);
+        try {
+            $testCase = $this;
+            $this->credis->pSubscribe(array('foobar','test*'), function ($credis, $pattern, $channel, $message) use ($testCase, &$time) {
+                $time = time(); // Reset timeout
+                // Test using: redis-cli publish foobar blah
+                $testCase->assertEquals('blah', $message);
+            });
+            $this->fail('pSubscribe should not return.');
+        } catch (CredisException $e) {
+            $this->assertEquals($timeout, time() - $time);
+            if ($this->useStandalone) { // phpredis does not distinguish between timed out and disconnected
+                $this->assertEquals($e->getCode(), CredisException::CODE_TIMED_OUT);
+            } else {
+                $this->assertEquals($e->getCode(), CredisException::CODE_DISCONNECTED);
+            }
+        }
+
+        // Perform a new subscription. Client should have either unsubscribed or disconnected
+        $timeout = 2;
+        $time = time();
+        $this->credis->setReadTimeout($timeout);
+        try {
+            $testCase = $this;
+            $this->credis->subscribe('foobar', function ($credis, $channel, $message) use ($testCase, &$time) {
+                $time = time(); // Reset timeout
+                // Test using: redis-cli publish foobar blah
+                $testCase->assertEquals('blah', $message);
+            });
+            $this->fail('subscribe should not return.');
+        } catch (CredisException $e) {
+            $this->assertEquals($timeout, time() - $time);
+            if ($this->useStandalone) { // phpredis does not distinguish between timed out and disconnected
+                $this->assertEquals($e->getCode(), CredisException::CODE_TIMED_OUT);
+            } else {
+                $this->assertEquals($e->getCode(), CredisException::CODE_DISCONNECTED);
+            }
+        }
+    }
 }
