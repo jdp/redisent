@@ -5,7 +5,8 @@ library when available for better performance. This project was forked from one 
 
 ## Getting Started
 
-Credis uses methods named the same as Redis commands, and translates return values to the appropriate PHP equivalents.
+Credis_Client uses methods named the same as Redis commands, and translates return values to the appropriate
+PHP equivalents.
 
 ```php
 require 'Credis/Client.php';
@@ -18,6 +19,10 @@ $redis->rpush('particles', array('proton','electron','neutron'));
 $particles = $redis->lrange('particles', 0, -1);
 ```
 Redis error responses will be wrapped in a CredisException class and thrown.
+
+Credis_Client also supports transparent command renaming. Write code using the original command names and the
+client will send the aliased commands to the server transparently. Specify the renamed commands using a prefix
+for md5, a callable function, individual aliases, or an array map of aliases. See "Redis Security":http://redis.io/topics/security for more info.
 
 ## Clustering your servers
 

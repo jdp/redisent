@@ -244,7 +244,12 @@ class Credis_Client {
      * Aliases for backwards compatibility with phpredis
      * @var array
      */
-    protected $aliasedMethods = array('delete' => 'del', 'getkeys' => 'keys', 'sremove' => 'srem');
+    protected $wrapperMethods = array('delete' => 'del', 'getkeys' => 'keys', 'sremove' => 'srem');
+
+    /**
+     * @var array
+     */
+    protected $renamedCommands;
 
     /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
@@ -420,6 +425,73 @@ class Credis_Client {
     }
 
     /**
+     * Enabled command renaming and provide mapping method. Supported methods are:
+     *
+     * 1. renameCommand('foo') // Salted md5 hash for all commands -> md5('foo'.$command)
+     * 2. renameCommand(function($command){ return 'my'.$command; }); // Callable
+     * 3. renameCommand('get', 'foo') // Single command -> alias
+     * 4. renameCommand(['get' => 'foo', 'set' => 'bar']) // Full map of [command -> alias]
+     *
+     * @param string|callable|array $command
+     * @param string|null $alias
+     * @return $this
+     */
+    public function renameCommand($command, $alias = NULL)
+    {
+        if ( ! $this->standalone) {
+            $this->forceStandalone();
+        }
+        if ($alias === NULL) {
+            $this->renamedCommands = $command;
+        } else {
+            if ( ! $this->renamedCommands) {
+                $this->renamedCommands = array();
+            }
+            $this->renamedCommands[$command] = $alias;
+        }
+        return $this;
+    }
+
+    /**
+     * @param $command
+     */
+    public function getRenamedCommand($command)
+    {
+        static $map;
+
+        // Command renaming not enabled
+        if ($this->renamedCommands === NULL) {
+            return $command;
+        }
+
+        // Initialize command map
+        if ($map === NULL) {
+            if (is_array($this->renamedCommands)) {
+                $map = $this->renamedCommands;
+            } else {
+                $map = array();
+            }
+        }
+
+        // Generate and return cached result
+        if ( ! isset($map[$command])) {
+            // String means all commands are hashed with salted md5
+            if (is_string($this->renamedCommands)) {
+                $map[$command] = md5($this->renamedCommands.$command);
+            }
+            // Would already be set in $map if it was intended to be renamed
+            else if (is_array($this->renamedCommands)) {
+                return $command;
+            }
+            // User-supplied function
+            else if (is_callable($this->renamedCommands)) {
+                $map[$command] = call_user_func($this->renamedCommands, $command);
+            }
+        }
+        return $map[$command];
+    }
+
+    /**
      * @param string $password
      * @return bool
      */
@@ -493,7 +565,7 @@ class Credis_Client {
                 else if($name == 'exec') {
                     if($this->isMulti) {
                         $this->commandNames[] = $name;
-                        $this->commands .= self::_prepare_command(array($name));
+                        $this->commands .= self::_prepare_command(array($this->getRenamedCommand($name)));
                     }
 
                     // Write request
@@ -519,7 +591,7 @@ class Credis_Client {
                     if($name == 'multi') {
                         $this->isMulti = TRUE;
                     }
-                    array_unshift($args, $name);
+                    array_unshift($args, $this->getRenamedCommand($name));
                     $this->commandNames[] = $name;
                     $this->commands .= self::_prepare_command($args);
                     return $this;
@@ -541,7 +613,7 @@ class Credis_Client {
             }
 
             // Non-pipeline mode
-            array_unshift($args, $name);
+            array_unshift($args, $this->getRenamedCommand($name));
             $command = self::_prepare_command($args);
             $this->write_command($command);
             $response = $this->read_reply($name);
@@ -641,8 +713,8 @@ class Credis_Client {
                 }
 
                 // Use aliases to be compatible with phpredis wrapper
-                if(isset($this->aliasedMethods[$name])) {
-                    $name = $this->aliasedMethods[$name];
+                if(isset($this->wrapperMethods[$name])) {
+                    $name = $this->wrapperMethods[$name];
                 }
 
                 // Multi and pipeline return self for chaining
