@@ -21,8 +21,8 @@ class CredisTest extends PHPUnit_Framework_TestCase
         return;
       }
       $this->config = json_decode($config);
-      if(count($this->config) < 2) {
-          $this->markTestSkipped('Config file '.$configFile.' should contain at least 2 entries');
+      if(count($this->config) < 6) {
+          $this->markTestSkipped('Config file '.$configFile.' should contain at least 6 entries');
           return;
       }
     }
@@ -33,7 +33,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
       $this->fail('The Redis extension is not loaded.');
     }
   }
-
   protected function tearDown()
   {
     if($this->credis) {
@@ -44,7 +43,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
       $this->credis = NULL;
     }
   }
-
   public function testFlush()
   {
     $this->credis->set('foo','FOO');
@@ -257,12 +255,12 @@ class CredisTest extends PHPUnit_Framework_TestCase
   public function testPassword()
   {
       $this->tearDown();
-      $this->assertObjectHasAttribute('password',$this->config[1]);
-      $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,$this->config[1]->password);
+      $this->assertObjectHasAttribute('password',$this->config[4]);
+      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,$this->config[4]->password);
       $this->assertInstanceOf('Credis_Client',$this->credis->connect());
       $this->assertTrue($this->credis->set('key','value'));
       $this->credis->close();
-      $this->credis = new Credis_Client($this->config[1]->host, $this->config[1]->port, $this->config[1]->timeout,false,0,'wrongpassword');
+      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,'wrongpassword');
       $this->credis->connect();
       $this->assertFalse($this->credis->set('key','value'));
       $this->assertFalse($this->credis->auth('anotherwrongpassword'));

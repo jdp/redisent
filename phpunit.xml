@@ -2,8 +2,11 @@
 <phpunit colors="true" verbose="true">
     <testsuites>
         <testsuite name="Cm_Cache_Backend_Redis testsuite">
+            <file>tests/SetUpBefore.php</file>
             <file>tests/CredisTest.php</file>
             <file>tests/CredisStandaloneTest.php</file>
+            <file>tests/CredisClusterTest.php</file>
+            <file>tests/TearDownAfter.php</file>
         </testsuite>
     </testsuites>
     <logging>

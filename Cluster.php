@@ -73,8 +73,9 @@ class Credis_Cluster
    * @param array $servers The Redis servers in the cluster.
    * @param int $replicas
    * @param bool $readOnMaster
+   * @param bool $standAlone
    */
-  public function __construct($servers, $replicas = 128, $readOnMaster = true)
+  public function __construct($servers, $replicas = 128, $readOnMaster = true, $standAlone = false)
   {
     $this->clients = array();
     $this->masterClient = null;
@@ -91,6 +92,9 @@ class Credis_Cluster
         isset($server['db']) ? $server['db'] : 0,
         isset($server['password']) ? $server['password'] : null
       );
+      if($standAlone) {
+        $client->forceStandalone();
+      }
       if (isset($server['alias'])) {
         $this->aliases[$server['alias']] = $client;
       }
