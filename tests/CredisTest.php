@@ -37,8 +37,10 @@ class CredisTest extends PHPUnit_Framework_TestCase
   protected function tearDown()
   {
     if($this->credis) {
-      $this->credis->flushAll();
-      $this->credis->close();
+      if($this->credis->isConnected()) {
+          $this->credis->flushAll();
+          $this->credis->close();
+      }
       $this->credis = NULL;
     }
   }
@@ -59,6 +61,8 @@ class CredisTest extends PHPUnit_Framework_TestCase
     } catch(CredisException $e) {
     }
     $this->credis->setReadTimeout(10);
+    $this->setExpectedException('CredisException','Negative read timeout values are not supported.');
+    $this->credis->setReadTimeout(-1);
   }
 
   public function testScalars()
@@ -212,11 +216,29 @@ class CredisTest extends PHPUnit_Framework_TestCase
     }
   }
 
-  public function testPersistent()
+  public function testPersistentvsNonPersistent()
   {
-      $this->tearDown();
+      $list = $this->credis->client('list');
+      $addr1 = $list[0]['addr'];
+      $this->credis->close();
+      $this->credis->connect();
+      $list = $this->credis->client('list');
+      $addr2 = $list[0]['addr'];
+      $this->credis->close();
+
+      $this->assertNotEquals($addr1,$addr2);
+
       $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,true);
       $this->credis->connect();
+      $list = $this->credis->client('list');
+      $addr1 = $list[0]['addr'];
+      $this->credis->close();
+      $this->credis->connect();
+      $list = $this->credis->client('list');
+      $addr2 = $list[0]['addr'];
+      $this->credis->close();
+
+      $this->assertEquals($addr1,$addr2);
   }
 
   public function testDb()
@@ -247,5 +269,59 @@ class CredisTest extends PHPUnit_Framework_TestCase
       $this->assertTrue($this->credis->auth('thepassword'));
       $this->assertTrue($this->credis->set('key','value'));
   }
+  public function testGettersAndSetters()
+  {
+      $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
+      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->assertFalse($this->credis->isConnected());
+      $this->credis->connect();
+      $this->assertTrue($this->credis->isConnected());
+      $this->credis->close();
+      $this->assertFalse($this->credis->isConnected());
+      $this->credis = new Credis_Client('localhost', 12345);
+      $this->credis->setMaxConnectRetries(1);
+      $this->setExpectedException('CredisException','Connection to Redis on localhost:12345 failed after 2 failures.');
+      $this->credis->connect();
+  }
 
+  public function testConnectionStrings()
+  {
+      $this->credis->close();
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port);
+      $this->credis->connect();
+      $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
+      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->credis->close();
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host);
+      $this->credis->connect();
+      $this->assertEquals($this->credis->getPort(),6379);
+      $this->credis->close();
+      $this->credis = new Credis_Client(realpath(__DIR__).'/redis.sock',0,null,'persistent');
+      $this->credis->connect();
+      $this->credis->set('key','value');
+      $this->assertEquals('value',$this->credis->get('key'));
+  }
+
+  public function testInvalidTcpConnectionstring()
+  {
+      $this->credis->close();
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':abc');
+      $this->setExpectedException('CredisException','Invalid host format; expected tcp://host[:port][/persistent]');
+      $this->credis->connect();
+  }
+
+  public function testInvalidUnixSocketConnectionstring()
+  {
+      $this->credis->close();
+      $this->credis = new Credis_Client('unix://path/to/redis.sock');
+      $this->setExpectedException('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
+      $this->credis->connect();
+  }
+
+  public function testForceStandAloneAfterEstablishedConnection()
+  {
+      $this->credis->connect();
+      $this->setExpectedException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
+      $this->credis->forceStandalone();
+  }
 }

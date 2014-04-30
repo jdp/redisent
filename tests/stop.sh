@@ -1,9 +1,8 @@
 #!/bin/sh
 for file in `find ./ -name "redis-*.pid"`
 do
-	local pid=`cat "$file"`
+	pid=`cat "$file"`
 	echo "Killing PID $pid in $file"
-	kill -9 "$pid"
-	rm "$file"
+	kill "$pid"
 done
-
+rm -f dump.rdb
