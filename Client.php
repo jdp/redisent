@@ -568,7 +568,7 @@ class Credis_Client {
         } catch (CredisException $e) {
             if ($e->getCode() == CredisException::CODE_TIMED_OUT) {
                 try {
-                    list($command, $pattern, $status) = $this->pUnsubscribe();
+                    list($command, $pattern, $status) = $this->pUnsubscribe($patterns);
                     while ($status !== 0) {
                         list($command, $pattern, $status) = $this->read_reply();
                     }
@@ -615,7 +615,7 @@ class Credis_Client {
         } catch (CredisException $e) {
             if ($e->getCode() == CredisException::CODE_TIMED_OUT) {
                 try {
-                    list($command, $channel, $status) = $this->unsubscribe();
+                    list($command, $channel, $status) = $this->unsubscribe($channels);
                     while ($status !== 0) {
                         list($command, $channel, $status) = $this->read_reply();
                     }
