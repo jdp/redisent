@@ -12,6 +12,9 @@
 class Credis_Rwsplit
 {
     protected static $_commands = array(
+        'DBSIZE',
+        'INFO',
+        'MONITOR',
         'EXISTS',
         'TYPE',
         'KEYS',

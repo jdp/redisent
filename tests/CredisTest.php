@@ -15,7 +15,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
   protected function setUp()
   {
     if($this->config === NULL) {
-      $configFile = dirname(__FILE__).'/test_config.json';
+      $configFile = dirname(__FILE__).'/redis_config.json';
       if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
         $this->markTestSkipped('Could not load '.$configFile);
         return;
@@ -212,31 +212,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
       $this->fail('Expected exception on invalid script.');
     } catch(CredisException $e) {
     }
-  }
-
-  public function testPersistentvsNonPersistent()
-  {
-      $list = $this->credis->client('list');
-      $addr1 = $list[0]['addr'];
-      $this->credis->close();
-      $this->credis->connect();
-      $list = $this->credis->client('list');
-      $addr2 = $list[0]['addr'];
-      $this->credis->close();
-
-      $this->assertNotEquals($addr1,$addr2);
-
-      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,true);
-      $this->credis->connect();
-      $list = $this->credis->client('list');
-      $addr1 = $list[0]['addr'];
-      $this->credis->close();
-      $this->credis->connect();
-      $list = $this->credis->client('list');
-      $addr2 = $list[0]['addr'];
-      $this->credis->close();
-
-      $this->assertEquals($addr1,$addr2);
   }
 
   public function testDb()

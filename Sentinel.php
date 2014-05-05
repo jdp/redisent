@@ -37,16 +37,21 @@ class Credis_Sentinel
      */
     protected $_slaves = array();
     /**
+     * @var bool
+     */
+    protected $_readOnMaster;
+    /**
      * Connect with a Sentinel node. Sentinel will do the master and slave discovery
      * @param Credis_Client $client
      */
-    public function __construct(Credis_Client $client)
+    public function __construct(Credis_Client $client, $readOnMaster=true)
     {
         if(!$client instanceof Credis_Client){
             throw new CredisException('Sentinel client should be an instance of Credis_Client');
         }
         $client->forceStandalone();
         $this->_client = $client;
+        $this->_readOnMaster = (bool) $readOnMaster;
     }
     /**
      * Discover the master node automatically and return an instance of Credis_Client that connects to the master
@@ -57,7 +62,7 @@ class Credis_Sentinel
     {
         $master = $this->getMasterAddressByName($name);
         if(!isset($master[0]) || !isset($master[1])){
-            throw new CredisException('No master found');
+            throw new CredisException('Master not found');
         }
         return new Credis_Client($master[0],$master[1]);
     }
@@ -81,9 +86,6 @@ class Credis_Sentinel
     public function createSlaveClients($name)
     {
         $slaves = $this->slaves($name);
-        if(!is_array($slaves) && count($slaves) == 0){
-            throw new CredisException('No slaves found');
-        }
         if($this->_readOnMaster){
             $slaves[] = $this->master($name);
         }
@@ -118,10 +120,9 @@ class Credis_Sentinel
      * @param string $name
      * @param bool $selectRandomSlave
      * @param bool $readOnMaster
-     * @param bool $debug
      * @return Credis_Cluster
      */
-    public function createCluster($name, $selectRandomSlave=true, $readOnMaster=true, $debug=false)
+    public function createCluster($name, $selectRandomSlave=true, $readOnMaster=true)
     {
         $clients = array();
         $workingClients = array();
@@ -147,7 +148,7 @@ class Credis_Sentinel
             }
         }
         $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
-        return new Credis_Cluster($clients,0,$readOnMaster,$debug);
+        return new Credis_Cluster($clients,1,$readOnMaster);
     }
     /**
      * If a Credis_Cluster object exists, return it. Otherwise create one and return it.

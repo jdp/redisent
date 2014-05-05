@@ -17,6 +17,12 @@ class TearDownAfter extends PHPUnit_Framework_TestCase
             }
         }
         unlink('dump.rdb');
+        unlink('redis-master.conf');
+        unlink('redis-slave.conf');
+        unlink('redis-sentinel.conf');
+        rename('redis-master.conf.bak','redis-master.conf');
+        rename('redis-slave.conf.bak','redis-slave.conf');
+        rename('redis-sentinel.conf.bak','redis-sentinel.conf');
     }
     public function testFoo()
     {

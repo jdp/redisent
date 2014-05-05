@@ -1,2 +1,2 @@
-tests/test_config.json
+tests/redis_config.json
 phpunit.phar
