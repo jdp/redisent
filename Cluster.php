@@ -8,8 +8,6 @@
  * @package Credis
  */
 
-#require_once 'Credis/Client.php';
-
 /**
  * A generalized Credis_Client interface for a cluster of Redis servers
  */
@@ -179,7 +177,7 @@ class Credis_Cluster
    */
   public function __call($name, $args)
   {
-    if($this->masterClient instanceof Credis_Client && !Credis_Rwsplit::isReadOnlyCommand($name)){
+    if($this->masterClient instanceof Credis_Client && class_exists('Credis_Rwsplit') && !Credis_Rwsplit::isReadOnlyCommand($name)){
         return $this->masterClient->__call($name, $args);
     }
     if (isset($this->dont_hash[strtoupper($name)]) || !isset($args[0])) {
