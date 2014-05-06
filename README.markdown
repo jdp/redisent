@@ -34,7 +34,36 @@ $cluster = new Credis_Cluster(array(
     array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'beta')
 ));
 $cluster->set('key','value');
-$cluster->alias('alpha')->info();
+$cluster->client('alpha')->info();
+```
+
+## Master/slave replication
+
+The Credis_Cluster class can also be used for [master/slave replication](http://redis.io/topics/replication).
+By including the *Credis_Rwsplit* class, Credis_Cluster will automatically perform *read/write splitting* and send the write requests exclusively to the master server.
+Read requests will be handled by all servers unless you set the *readOnMaster* flag to false.
+
+
+```php
+require 'Credis/Client.php';
+require 'Credis/Cluster.php';
+require 'Credis/Rwsplit.php';
+
+$cluster = new Credis_Cluster(array(
+    array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'master', 'master'=>true),
+    array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'slave')
+));
+$cluster->set('key','value');
+echo $cluster->client('slave')->get('key').PHP_EOL;
+
+$cluster->client('master')->set('key2','value');
+echo $cluster->client('slave')->get('key').PHP_EOL;
+```
+
+Setting  up the replication is simple and only requires adding the following line to the config of the slave server:
+
+```
+slaveof 127.0.0.1 6379
 ```
 
 ## About
