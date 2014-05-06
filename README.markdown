@@ -36,7 +36,8 @@ $cluster = new Credis_Cluster(array(
     array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'beta')
 ));
 $cluster->set('key','value');
-$cluster->client('alpha')->info();
+echo "Alpha: ".$cluster->client('alpha')->get('key').PHP_EOL;
+echo "Beta: ".$cluster->client('beta')->get('key').PHP_EOL;
 ```
 
 ### Explicit definition of replicas
@@ -59,7 +60,8 @@ $cluster = new Credis_Cluster(
     ), 5
 );
 $cluster->set('key','value');
-$cluster->client('alpha')->info();
+echo "Alpha: ".$cluster->client('alpha')->get('key').PHP_EOL;
+echo "Beta: ".$cluster->client('beta')->get('key').PHP_EOL;
 ```
 
 ## Master/slave replication
