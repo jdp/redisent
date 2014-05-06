@@ -98,6 +98,10 @@ echo $cluster->client('slave')->get('key2').PHP_EOL;
 ```
 
 ### No read on master
+
+The following example illustrates how to disable reading on the master server. This will cause the master server only to be used for writing.
+This should only happen when you have enough write calls to create a certain load on the master server. Otherwise this is an inefficient usage of server resources.
+
 ```php
 <?php
 require 'Credis/Client.php';
@@ -110,6 +114,32 @@ $cluster = new Credis_Cluster(
         array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'slave')
     ), 128, false
 );
+$cluster->set('key','value');
+echo $cluster->get('key').PHP_EOL;
+```
+## Automatic failover with Sentinel
+
+[Redis Sentinel](http://redis.io/topics/sentinel) is a system that can monitor Redis instances. You register master servers and Sentinel automatically detects its slaves.
+
+When a master server dies, Sentinel will make sure one of the slaves is promoted to be the new master. This autofailover mechanism will also demote failed masters to avoid data inconsistency.
+
+The *Credis_Sentinel* class interacts with the *Redis Sentinel* instance(s) and acts as a proxy. Sentinel will automatically create *Credis_Cluster* objects and will set the master and slaves accordingly.
+
+Sentinel uses the same protocol as Redis. In the example below we register the Sentinel server running on port *26379* and assign it to the Credis_Sentinel object.
+We then ask Sentinel the hostname and port for the master server known as *mymaster*. By calling the *getCluster* method we immediately get a *Credis_Cluster* object that allows us to perform basic Redis calls.
+
+```php
+<?php
+require 'Credis/Client.php';
+require 'Credis/Cluster.php';
+require 'Credis/Rwsplit.php';
+require 'Credis/Sentinel.php';
+
+$sentinel = new Credis_Sentinel(new Credis_Client('127.0.0.1',26379));
+$masterAddress = $sentinel->getMasterAddressByName('mymaster');
+$cluster = $sentinel->getCluster('mymaster');
+
+echo 'Writing to master: '.$masterAddress[0].' on port '.$masterAddress[1].PHP_EOL;
 $cluster->set('key','value');
 echo $cluster->get('key').PHP_EOL;
 ```
