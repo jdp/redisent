@@ -37,11 +37,6 @@ class Credis_Sentinel
      */
     protected $_slaves = array();
     /**
-     * Should read queries also be sent to the master?
-     * @var bool
-     */
-    protected $_readOnMaster;
-    /**
      * Use the phpredis extension or the standalone implementation
      * @var bool
      */
@@ -50,14 +45,13 @@ class Credis_Sentinel
      * Connect with a Sentinel node. Sentinel will do the master and slave discovery
      * @param Credis_Client $client
      */
-    public function __construct(Credis_Client $client, $readOnMaster=true)
+    public function __construct(Credis_Client $client)
     {
         if(!$client instanceof Credis_Client){
             throw new CredisException('Sentinel client should be an instance of Credis_Client');
         }
         $client->forceStandalone();
         $this->_client = $client;
-        $this->_readOnMaster = (bool) $readOnMaster;
     }
     /**
      * @return Credis_Sentinel
@@ -100,9 +94,6 @@ class Credis_Sentinel
     public function createSlaveClients($name)
     {
         $slaves = $this->slaves($name);
-        if($this->_readOnMaster){
-            $slaves[] = $this->master($name);
-        }
         $workingSlaves = array();
         foreach($slaves as $slave) {
             if(!isset($slave[9])){
@@ -137,7 +128,7 @@ class Credis_Sentinel
      * @param bool $readOnMaster
      * @return Credis_Cluster
      */
-    public function createCluster($name, $replicas=1, $selectRandomSlave=true, $readOnMaster=true)
+    public function createCluster($name, $replicas=128, $selectRandomSlave=true, $readOnMaster=true)
     {
         $clients = array();
         $workingClients = array();
@@ -172,7 +163,7 @@ class Credis_Sentinel
      * @param bool $readOnMaster
      * @return Credis_Cluster
      */
-    public function getCluster($name, $replicas=1, $selectRandomSlave=true, $readOnMaster=true)
+    public function getCluster($name, $replicas=128, $selectRandomSlave=true, $readOnMaster=true)
     {
         if(!isset($this->_cluster[$name])){
             $this->_cluster[$name] = $this->createCluster($name, $replicas, $selectRandomSlave, $readOnMaster);

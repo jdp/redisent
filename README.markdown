@@ -143,6 +143,28 @@ echo 'Writing to master: '.$masterAddress[0].' on port '.$masterAddress[1].PHP_E
 $cluster->set('key','value');
 echo $cluster->get('key').PHP_EOL;
 ```
+### Additional parameters
+
+Because [Credis_Sentinel](Sentinel.php) will create [Credis_Cluster](Cluster.php) objects using the *"getCluster"* or *"createCluster"* methods, additional parameters can be passed.
+
+First of all there's the *"readOnMaster"* flag. You can also define the number of replicas. And finally there's a *"selectRandomSlave"* option.
+
+The *"selectRandomSlave"* flag is used in setups for masters that have multiple slaves. The Credis_Sentinel will either select one random slave to be used when creating the Credis_Cluster object or to pass them all and use the built-in hashing.
+
+The example below shows how to use these 3 options. It sets the number of replicas to 10, it doesn't select a random slave and doesn't allow reading on the master server.
+
+```php
+<?php
+require 'Credis/Client.php';
+require 'Credis/Cluster.php';
+require 'Credis/Rwsplit.php';
+require 'Credis/Sentinel.php';
+
+$sentinel = new Credis_Sentinel(new Credis_Client('127.0.0.1',26379));
+$cluster = $sentinel->getCluster('mymaster',10,false,false);
+$cluster->set('key','value');
+echo $cluster->get('key').PHP_EOL;
+```
 
 ## About
 

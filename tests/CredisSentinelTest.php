@@ -97,7 +97,7 @@ class CredisSentinelTest extends PHPUnit_Framework_TestCase
   {
       $slaves = $this->sentinel->getSlaveClients($this->sentinelConfig->clustername);
       $this->assertInternalType('array',$slaves);
-      $this->assertCount(2,$slaves);
+      $this->assertCount(1,$slaves);
       foreach($slaves as $slave){
           $this->assertInstanceOf('Credis_Client',$slave);
       }
