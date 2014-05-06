@@ -25,7 +25,9 @@ Credis also includes a way for developers to fully utilize the scalability of Re
 Using the Credis_Cluster class, you can use Credis the same way, except that keys will be hashed across multiple servers.
 Here is how to set up a cluster:
 
+### Basic clustering example
 ```php
+<?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
 
@@ -33,6 +35,29 @@ $cluster = new Credis_Cluster(array(
     array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'alpha'),
     array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'beta')
 ));
+$cluster->set('key','value');
+$cluster->client('alpha')->info();
+```
+
+### Explicit definition of replicas
+
+The consistent hashing strategy stores keys on a so called "ring". The position of each key is relative to the position of its target node. The target node that has the closest position will be the selected node for that specific key.
+
+To avoid an uneven distribution of keys (especially on small clusters), it is common to duplicate target nodes. Based on the number of replicas, each target node will exist *n times* on the "ring".
+
+The following example explicitly sets the number of replicas to 5. Both Redis instances will have 5 copies. The default value is 128.
+
+```php
+<?php
+require 'Credis/Client.php';
+require 'Credis/Cluster.php';
+
+$cluster = new Credis_Cluster(
+    array(
+        array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'alpha'),
+        array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'beta')
+    ), 5
+);
 $cluster->set('key','value');
 $cluster->client('alpha')->info();
 ```
@@ -53,6 +78,7 @@ slaveof 127.0.0.1 6379
 
 ### Basic master/slave example
 ```php
+<?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
 require 'Credis/Rwsplit.php';
@@ -62,14 +88,16 @@ $cluster = new Credis_Cluster(array(
     array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'slave')
 ));
 $cluster->set('key','value');
+echo $cluster->get('key').PHP_EOL;
 echo $cluster->client('slave')->get('key').PHP_EOL;
 
 $cluster->client('master')->set('key2','value');
-echo $cluster->client('slave')->get('key').PHP_EOL;
+echo $cluster->client('slave')->get('key2').PHP_EOL;
 ```
 
-### No read/write splitting
+### No read on master
 ```php
+<?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
 require 'Credis/Rwsplit.php';
@@ -81,10 +109,7 @@ $cluster = new Credis_Cluster(
     ), 128, false
 );
 $cluster->set('key','value');
-echo $cluster->client('slave')->get('key').PHP_EOL;
-
-$cluster->client('master')->set('key2','value');
-echo $cluster->client('slave')->get('key').PHP_EOL;
+echo $cluster->get('key').PHP_EOL;
 ```
 
 ## About
