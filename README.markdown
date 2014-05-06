@@ -22,7 +22,7 @@ Redis error responses will be wrapped in a CredisException class and thrown.
 ## Clustering your servers
 
 Credis also includes a way for developers to fully utilize the scalability of Redis with multiple servers and [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing).
-Using the Credis_Cluster class, you can use Credis the same way, except that keys will be hashed across multiple servers.
+Using the [Credis_Cluster](Cluster.php) class, you can use Credis the same way, except that keys will be hashed across multiple servers.
 Here is how to set up a cluster:
 
 ### Basic clustering example
@@ -66,8 +66,8 @@ echo "Beta: ".$cluster->client('beta')->get('key').PHP_EOL;
 
 ## Master/slave replication
 
-The Credis_Cluster class can also be used for [master/slave replication](http://redis.io/topics/replication).
-By including the *Credis_Rwsplit* class, Credis_Cluster will automatically perform *read/write splitting* and send the write requests exclusively to the master server.
+The [Credis_Cluster](Cluster.php) class can also be used for [master/slave replication](http://redis.io/topics/replication).
+By including the [Credis_Rwsplit](Rwsplit.php) class, Credis_Cluster will automatically perform *read/write splitting* and send the write requests exclusively to the master server.
 Read requests will be handled by all servers unless you set the *readOnMaster* flag to false.
 
 ### Redis server settings for master/slave replication
@@ -123,10 +123,10 @@ echo $cluster->get('key').PHP_EOL;
 
 When a master server dies, Sentinel will make sure one of the slaves is promoted to be the new master. This autofailover mechanism will also demote failed masters to avoid data inconsistency.
 
-The *Credis_Sentinel* class interacts with the *Redis Sentinel* instance(s) and acts as a proxy. Sentinel will automatically create *Credis_Cluster* objects and will set the master and slaves accordingly.
+The [Credis_Sentinel](Sentinel.php) class interacts with the *Redis Sentinel* instance(s) and acts as a proxy. Sentinel will automatically create [Credis_Cluster](Cluster.php) objects and will set the master and slaves accordingly.
 
-Sentinel uses the same protocol as Redis. In the example below we register the Sentinel server running on port *26379* and assign it to the Credis_Sentinel object.
-We then ask Sentinel the hostname and port for the master server known as *mymaster*. By calling the *getCluster* method we immediately get a *Credis_Cluster* object that allows us to perform basic Redis calls.
+Sentinel uses the same protocol as Redis. In the example below we register the Sentinel server running on port *26379* and assign it to the [Credis_Sentinel](Sentinel.php) object.
+We then ask Sentinel the hostname and port for the master server known as *mymaster*. By calling the *getCluster* method we immediately get a [Credis_Cluster](Cluster.php) object that allows us to perform basic Redis calls.
 
 ```php
 <?php
