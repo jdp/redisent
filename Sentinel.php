@@ -37,9 +37,15 @@ class Credis_Sentinel
      */
     protected $_slaves = array();
     /**
+     * Should read queries also be sent to the master?
      * @var bool
      */
     protected $_readOnMaster;
+    /**
+     * Use the phpredis extension or the standalone implementation
+     * @var bool
+     */
+    protected $_standAlone = false;
     /**
      * Connect with a Sentinel node. Sentinel will do the master and slave discovery
      * @param Credis_Client $client
@@ -52,6 +58,14 @@ class Credis_Sentinel
         $client->forceStandalone();
         $this->_client = $client;
         $this->_readOnMaster = (bool) $readOnMaster;
+    }
+    /**
+     * @return Credis_Sentinel
+     */
+    public function forceStandalone()
+    {
+        $this->_standAlone = true;
+        return $this;
     }
     /**
      * Discover the master node automatically and return an instance of Credis_Client that connects to the master
@@ -118,11 +132,12 @@ class Credis_Sentinel
      * When $selectRandomSlave is false, all clients are passed and hashing is applied in Credis_Cluster
      * When $readOnMaster is true, the master server will also be used for read commands.
      * @param string $name
+     * @param int $replicas
      * @param bool $selectRandomSlave
      * @param bool $readOnMaster
      * @return Credis_Cluster
      */
-    public function createCluster($name, $selectRandomSlave=true, $readOnMaster=true)
+    public function createCluster($name, $replicas=1, $selectRandomSlave=true, $readOnMaster=true)
     {
         $clients = array();
         $workingClients = array();
@@ -139,7 +154,6 @@ class Credis_Sentinel
         if(count($workingClients)>0){
             if($selectRandomSlave){
                 if($readOnMaster){
-                    $readOnMaster = false;
                     $workingClients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>false);
                 }
                 $clients[] = $workingClients[rand(0,count($workingClients)-1)];
@@ -148,20 +162,20 @@ class Credis_Sentinel
             }
         }
         $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
-        return new Credis_Cluster($clients,1,$readOnMaster);
+        return new Credis_Cluster($clients,$replicas,$readOnMaster,$this->_standAlone);
     }
     /**
      * If a Credis_Cluster object exists, return it. Otherwise create one and return it.
      * @param string $name
+     * @param int $replicas
      * @param bool $selectRandomSlave
      * @param bool $readOnMaster
-     * @param bool $debug
      * @return Credis_Cluster
      */
-    public function getCluster($name, $selectRandomSlave=true, $readOnMaster=true, $debug=false)
+    public function getCluster($name, $replicas=1, $selectRandomSlave=true, $readOnMaster=true)
     {
         if(!isset($this->_cluster[$name])){
-            $this->_cluster[$name] = $this->createCluster($name, $selectRandomSlave, $readOnMaster, $debug);
+            $this->_cluster[$name] = $this->createCluster($name, $replicas, $selectRandomSlave, $readOnMaster);
         }
         return $this->_cluster[$name];
     }
