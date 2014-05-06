@@ -1,2 +1,2 @@
-tests/redis_config.json
+.idea
 phpunit.phar
