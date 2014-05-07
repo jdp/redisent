@@ -61,14 +61,14 @@ class Credis_Cluster
    *   'alias' => alias,
    *   'persistent' => persistence_identifier,
    *   'master' => master
+   *   'write_only'=> true/false
    * )
    *
    * @param array $servers The Redis servers in the cluster.
    * @param int $replicas
-   * @param bool $readOnMaster
    * @param bool $standAlone
    */
-  public function __construct($servers, $replicas = 128, $readOnMaster = true, $standAlone = false)
+  public function __construct($servers, $replicas = 128, $standAlone = false)
   {
     $this->clients = array();
     $this->masterClient = null;
@@ -93,7 +93,7 @@ class Credis_Cluster
       }
       if(isset($server['master']) && $server['master'] === true){
         $this->masterClient = $client;
-        if(!$readOnMaster){
+        if(isset($server['write_only']) && $server['write_only'] === true){
             continue;
         }
       }

@@ -37,7 +37,7 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
       $this->fail('The Redis extension is not loaded.');
     }
     $clients = array_slice($this->config,0,4);
-    $this->cluster = new Credis_Cluster($clients,2,true,$this->useStandalone);
+    $this->cluster = new Credis_Cluster($clients,2,$this->useStandalone);
   }
 
   protected function tearDown()
@@ -56,7 +56,7 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
   public function testKeyHashing()
   {
       $this->tearDown();
-      $this->cluster = new Credis_Cluster(array_slice($this->config,0,3),2,true,$this->useStandalone);
+      $this->cluster = new Credis_Cluster(array_slice($this->config,0,3),2,$this->useStandalone);
       $keys = array();
       $lines = explode("\n", file_get_contents("keys.test"));
       foreach ($lines as $line) {
@@ -93,14 +93,16 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
   public function testMasterSlave()
   {
       $this->tearDown();
-      $this->cluster = new Credis_Cluster(array($this->config[0],$this->config[6]),2,true,$this->useStandalone);
+      $this->cluster = new Credis_Cluster(array($this->config[0],$this->config[6]),2,$this->useStandalone);
       $this->assertTrue($this->cluster->client('master')->set('key','value'));
       $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
       $this->assertEquals('value',$this->cluster->get('key'));
       $this->assertFalse($this->cluster->client('slave')->set('key2','value'));
 
       $this->tearDown();
-      $this->cluster = new Credis_Cluster(array($this->config[0],$this->config[6]),2,false,$this->useStandalone);
+      $writeOnlyConfig = $this->config[0];
+      $writeOnlyConfig['write_only'] = true;
+      $this->cluster = new Credis_Cluster(array($writeOnlyConfig,$this->config[6]),2,$this->useStandalone);
       $this->assertTrue($this->cluster->client('master')->set('key','value'));
       $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
       $this->assertFalse($this->cluster->client('slave')->set('key2','value'));

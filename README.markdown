@@ -68,7 +68,7 @@ echo "Beta: ".$cluster->client('beta')->get('key').PHP_EOL;
 
 The [Credis_Cluster](Cluster.php) class can also be used for [master/slave replication](http://redis.io/topics/replication).
 Credis_Cluster will automatically perform *read/write splitting* and send the write requests exclusively to the master server.
-Read requests will be handled by all servers unless you set the *readOnMaster* flag to false.
+Read requests will be handled by all servers unless you set the *write_only* flag to true in the connection string of the master server.
 
 ### Redis server settings for master/slave replication
 
@@ -106,12 +106,10 @@ This should only happen when you have enough write calls to create a certain loa
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
 
-$cluster = new Credis_Cluster(
-    array(
-        array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'master', 'master'=>true),
-        array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'slave')
-    ), 128, false
-);
+$cluster = new Credis_Cluster(array(
+    array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'master', 'master'=>true, 'write_only'=>true),
+    array('host' => '127.0.0.1', 'port' => 6380, 'alias'=>'slave')
+));
 $cluster->set('key','value');
 echo $cluster->get('key').PHP_EOL;
 ```
@@ -144,7 +142,7 @@ echo $cluster->get('key').PHP_EOL;
 
 Because [Credis_Sentinel](Sentinel.php) will create [Credis_Cluster](Cluster.php) objects using the *"getCluster"* or *"createCluster"* methods, additional parameters can be passed.
 
-First of all there's the *"readOnMaster"* flag. You can also define the number of replicas. And finally there's a *"selectRandomSlave"* option.
+First of all there's the *"write_only"* flag. You can also define the number of replicas. And finally there's a *"selectRandomSlave"* option.
 
 The *"selectRandomSlave"* flag is used in setups for masters that have multiple slaves. The Credis_Sentinel will either select one random slave to be used when creating the Credis_Cluster object or to pass them all and use the built-in hashing.
 
@@ -157,7 +155,7 @@ require 'Credis/Cluster.php';
 require 'Credis/Sentinel.php';
 
 $sentinel = new Credis_Sentinel(new Credis_Client('127.0.0.1',26379));
-$cluster = $sentinel->getCluster('mymaster',10,false,false);
+$cluster = $sentinel->getCluster('mymaster',10,false,true);
 $cluster->set('key','value');
 echo $cluster->get('key').PHP_EOL;
 ```

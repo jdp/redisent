@@ -121,14 +121,14 @@ class Credis_Sentinel
      * Returns a Redis cluster object containing a random slave and the master
      * When $selectRandomSlave is true, only one random slave is passed.
      * When $selectRandomSlave is false, all clients are passed and hashing is applied in Credis_Cluster
-     * When $readOnMaster is true, the master server will also be used for read commands.
+     * When $writeOnly is false, the master server will also be used for read commands.
      * @param string $name
      * @param int $replicas
      * @param bool $selectRandomSlave
-     * @param bool $readOnMaster
+     * @param bool $writeOnly
      * @return Credis_Cluster
      */
-    public function createCluster($name, $replicas=128, $selectRandomSlave=true, $readOnMaster=true)
+    public function createCluster($name, $replicas=128, $selectRandomSlave=true, $writeOnly=false)
     {
         $clients = array();
         $workingClients = array();
@@ -144,7 +144,7 @@ class Credis_Sentinel
         }
         if(count($workingClients)>0){
             if($selectRandomSlave){
-                if($readOnMaster){
+                if(!$writeOnly){
                     $workingClients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>false);
                 }
                 $clients[] = $workingClients[rand(0,count($workingClients)-1)];
@@ -152,21 +152,21 @@ class Credis_Sentinel
                 $clients = $workingClients;
             }
         }
-        $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true);
-        return new Credis_Cluster($clients,$replicas,$readOnMaster,$this->_standAlone);
+        $clients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>true,'write_only'=>$writeOnly);
+        return new Credis_Cluster($clients,$replicas,$this->_standAlone);
     }
     /**
      * If a Credis_Cluster object exists, return it. Otherwise create one and return it.
      * @param string $name
      * @param int $replicas
      * @param bool $selectRandomSlave
-     * @param bool $readOnMaster
+     * @param bool $writeOnly
      * @return Credis_Cluster
      */
-    public function getCluster($name, $replicas=128, $selectRandomSlave=true, $readOnMaster=true)
+    public function getCluster($name, $replicas=128, $selectRandomSlave=true, $writeOnly=false)
     {
         if(!isset($this->_cluster[$name])){
-            $this->_cluster[$name] = $this->createCluster($name, $replicas, $selectRandomSlave, $readOnMaster);
+            $this->_cluster[$name] = $this->createCluster($name, $replicas, $selectRandomSlave, $writeOnly);
         }
         return $this->_cluster[$name];
     }
