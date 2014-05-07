@@ -201,4 +201,24 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
       $this->setExpectedException('CredisException','Server should either be an array or an instance of Credis_Client');
       new Credis_Cluster(array(new stdClass()),2,$this->useStandalone);
   }
+  public function testSetMasterClient()
+  {
+      $this->tearDown();
+      $master = new Credis_Client($this->config[0]['host'],$this->config[0]['port']);
+      $slave = new Credis_Client($this->config[6]['host'],$this->config[6]['port']);
+
+      $this->cluster = new Credis_Cluster(array($slave),2,$this->useStandalone);
+      $this->assertInstanceOf('Credis_Cluster',$this->cluster->setMasterClient($master));
+      $this->assertCount(2,$this->cluster->clients());
+      $this->assertEquals($this->config[6]['port'],$this->cluster->client(0)->getPort());
+      $this->assertEquals($this->config[0]['port'],$this->cluster->client('master')->getPort());
+
+      $this->cluster = new Credis_Cluster(array($this->config[0]),2,$this->useStandalone);
+      $this->assertInstanceOf('Credis_Cluster',$this->cluster->setMasterClient(new Credis_Client($this->config[1]['host'],$this->config[1]['port'])));
+      $this->assertEquals($this->config[0]['port'],$this->cluster->client('master')->getPort());
+
+      $this->cluster = new Credis_Cluster(array($slave),2,$this->useStandalone);
+      $this->assertInstanceOf('Credis_Cluster',$this->cluster->setMasterClient($master,true));
+      $this->assertCount(1,$this->cluster->clients());
+  }
 }

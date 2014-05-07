@@ -74,7 +74,7 @@ class Credis_Cluster
     $this->masterClient = null;
     $this->aliases = array();
     $this->ring = array();
-    $clientNum = 0;
+    $this->replicas = (int)$replicas;
     $client = null;
     foreach ($servers as $server)
     {
@@ -105,11 +105,10 @@ class Credis_Cluster
           $client->forceStandalone();
       }
       $this->clients[] = $client;
-      for ($replica = 0; $replica <= $replicas; $replica++) {
+      for ($replica = 0; $replica <= $this->replicas; $replica++) {
           $md5num = hexdec(substr(md5($client->getHost().':'.$client->getPort().'-'.$replica),0,7));
-          $this->ring[$md5num] = $clientNum;
+          $this->ring[$md5num] = count($this->clients)-1;
       }
-      $clientNum++;
     }
     ksort($this->ring, SORT_NUMERIC);
     $this->nodes = array_keys($this->ring);
@@ -121,9 +120,9 @@ class Credis_Cluster
     ));
     if($this->masterClient !== null && count($this->clients()) == 0){
         $this->clients[] = $this->masterClient;
-        for ($replica = 0; $replica <= $replicas; $replica++) {
+        for ($replica = 0; $replica <= $this->replicas; $replica++) {
             $md5num = hexdec(substr(md5($this->masterClient->getHost().':'.$this->masterClient->getHost().'-'.$replica),0,7));
-            $this->ring[$md5num] = $clientNum;
+            $this->ring[$md5num] = count($this->clients)-1;
         }
         $this->nodes = array_keys($this->ring);
     }
@@ -131,11 +130,26 @@ class Credis_Cluster
 
   /**
    * @param Credis_Client $masterClient
+   * @param bool $writeOnly
    * @return Credis_Cluster
    */
-  public function setMasterClient(Credis_Client $masterClient)
+  public function setMasterClient(Credis_Client $masterClient, $writeOnly=false)
   {
+    if(!$masterClient instanceof Credis_Client){
+        throw new CredisException('Master client should be an instance of Credis_Client');
+    }
     $this->masterClient = $masterClient;
+    if (!isset($this->aliases['master'])) {
+        $this->aliases['master'] = $masterClient;
+    }
+    if(!$writeOnly){
+        $this->clients[] = $this->masterClient;
+        for ($replica = 0; $replica <= $this->replicas; $replica++) {
+            $md5num = hexdec(substr(md5($this->masterClient->getHost().':'.$this->masterClient->getHost().'-'.$replica),0,7));
+            $this->ring[$md5num] = count($this->clients)-1;
+        }
+        $this->nodes = array_keys($this->ring);
+    }
     return $this;
   }
   /**
