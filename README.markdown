@@ -67,7 +67,7 @@ echo "Beta: ".$cluster->client('beta')->get('key').PHP_EOL;
 ## Master/slave replication
 
 The [Credis_Cluster](Cluster.php) class can also be used for [master/slave replication](http://redis.io/topics/replication).
-By including the [Credis_Rwsplit](Rwsplit.php) class, Credis_Cluster will automatically perform *read/write splitting* and send the write requests exclusively to the master server.
+Credis_Cluster will automatically perform *read/write splitting* and send the write requests exclusively to the master server.
 Read requests will be handled by all servers unless you set the *readOnMaster* flag to false.
 
 ### Redis server settings for master/slave replication
@@ -83,7 +83,6 @@ slaveof 127.0.0.1 6379
 <?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
-require 'Credis/Rwsplit.php';
 
 $cluster = new Credis_Cluster(array(
     array('host' => '127.0.0.1', 'port' => 6379, 'alias'=>'master', 'master'=>true),
@@ -106,7 +105,6 @@ This should only happen when you have enough write calls to create a certain loa
 <?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
-require 'Credis/Rwsplit.php';
 
 $cluster = new Credis_Cluster(
     array(
@@ -132,7 +130,6 @@ We then ask Sentinel the hostname and port for the master server known as *mymas
 <?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
-require 'Credis/Rwsplit.php';
 require 'Credis/Sentinel.php';
 
 $sentinel = new Credis_Sentinel(new Credis_Client('127.0.0.1',26379));
@@ -157,7 +154,6 @@ The example below shows how to use these 3 options. It sets the number of replic
 <?php
 require 'Credis/Client.php';
 require 'Credis/Cluster.php';
-require 'Credis/Rwsplit.php';
 require 'Credis/Sentinel.php';
 
 $sentinel = new Credis_Sentinel(new Credis_Client('127.0.0.1',26379));

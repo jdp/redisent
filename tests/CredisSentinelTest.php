@@ -2,7 +2,6 @@
 
 require_once dirname(__FILE__).'/../Client.php';
 require_once dirname(__FILE__).'/../Cluster.php';
-require_once dirname(__FILE__).'/../Rwsplit.php';
 require_once dirname(__FILE__).'/../Sentinel.php';
 
 class CredisSentinelTest extends PHPUnit_Framework_TestCase

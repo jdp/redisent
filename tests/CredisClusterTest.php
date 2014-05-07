@@ -2,7 +2,6 @@
 
 require_once dirname(__FILE__).'/../Client.php';
 require_once dirname(__FILE__).'/../Cluster.php';
-require_once dirname(__FILE__).'/../Rwsplit.php';
 
 class CredisClusterTest extends PHPUnit_Framework_TestCase
 {
