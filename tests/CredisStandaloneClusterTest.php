@@ -19,7 +19,7 @@ class CredisStandaloneClusterTest extends CredisClusterTest
   public function testMasterSlave()
   {
     $this->tearDown();
-    $this->cluster = new Credis_Cluster(array($this->config[0],$this->config[6]),2,true,$this->useStandalone);
+    $this->cluster = new Credis_Cluster(array($this->config[0],$this->config[6]),2,$this->useStandalone);
     $this->assertTrue($this->cluster->client('master')->set('key','value'));
     $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
     $this->assertEquals('value',$this->cluster->get('key'));

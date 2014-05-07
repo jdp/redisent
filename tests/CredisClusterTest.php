@@ -189,4 +189,16 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
     $this->assertFalse($this->cluster->isReadOnlyCommand("SMOVE"));
     $this->assertFalse($this->cluster->isReadOnlyCommand("ZADD"));
   }
+  public function testCredisClientInstancesInConstructor()
+  {
+      $this->tearDown();
+      $two = new Credis_Client($this->config[1]['host'],$this->config[1]['port']);
+      $three = new Credis_Client($this->config[2]['host'],$this->config[2]['port']);
+      $four = new Credis_Client($this->config[3]['host'],$this->config[3]['port']);
+      $this->cluster = new Credis_Cluster(array($two,$three,$four),2,$this->useStandalone);
+      $this->assertTrue($this->cluster->set('key','value'));
+      $this->assertEquals('value',$this->cluster->get('key'));
+      $this->setExpectedException('CredisException','Server should either be an array or an instance of Credis_Client');
+      new Credis_Cluster(array(new stdClass()),2,$this->useStandalone);
+  }
 }

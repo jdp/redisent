@@ -75,31 +75,38 @@ class Credis_Cluster
     $this->aliases = array();
     $this->ring = array();
     $clientNum = 0;
+    $client = null;
     foreach ($servers as $server)
     {
-      $client = new Credis_Client(
-        $server['host'],
-        $server['port'],
-        isset($server['timeout']) ? $server['timeout'] : 2.5,
-        isset($server['persistent']) ? $server['persistent'] : '',
-        isset($server['db']) ? $server['db'] : 0,
-        isset($server['password']) ? $server['password'] : null
-      );
+      if(is_array($server)){
+          $client = new Credis_Client(
+            $server['host'],
+            $server['port'],
+            isset($server['timeout']) ? $server['timeout'] : 2.5,
+            isset($server['persistent']) ? $server['persistent'] : '',
+            isset($server['db']) ? $server['db'] : 0,
+            isset($server['password']) ? $server['password'] : null
+          );
+          if (isset($server['alias'])) {
+            $this->aliases[$server['alias']] = $client;
+          }
+          if(isset($server['master']) && $server['master'] === true){
+            $this->masterClient = $client;
+            if(isset($server['write_only']) && $server['write_only'] === true){
+                continue;
+            }
+          }
+      } elseif($server instanceof Credis_Client){
+        $client = $server;
+      } else {
+          throw new CredisException('Server should either be an array or an instance of Credis_Client');
+      }
       if($standAlone) {
-        $client->forceStandalone();
-      }
-      if (isset($server['alias'])) {
-        $this->aliases[$server['alias']] = $client;
-      }
-      if(isset($server['master']) && $server['master'] === true){
-        $this->masterClient = $client;
-        if(isset($server['write_only']) && $server['write_only'] === true){
-            continue;
-        }
+          $client->forceStandalone();
       }
       $this->clients[] = $client;
       for ($replica = 0; $replica <= $replicas; $replica++) {
-          $md5num = hexdec(substr(md5($server['host'].':'.$server['port'].'-'.$replica),0,7));
+          $md5num = hexdec(substr(md5($client->getHost().':'.$client->getPort().'-'.$replica),0,7));
           $this->ring[$md5num] = $clientNum;
       }
       $clientNum++;
@@ -120,6 +127,16 @@ class Credis_Cluster
         }
         $this->nodes = array_keys($this->ring);
     }
+  }
+
+  /**
+   * @param Credis_Client $masterClient
+   * @return Credis_Cluster
+   */
+  public function setMasterClient(Credis_Client $masterClient)
+  {
+    $this->masterClient = $masterClient;
+    return $this;
   }
   /**
    * Get a client by index or alias.
