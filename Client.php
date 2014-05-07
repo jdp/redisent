@@ -263,13 +263,8 @@ class Credis_Client {
         $this->timeout = $timeout;
         $this->persistent = (string) $persistent;
         $this->standalone = ! extension_loaded('redis');
-
-        if($password !== null) {
-            $this->auth($password);
-        }
-        if($db !== 0) {
-            $this->select($db);
-        }
+        $this->authPassword = $password;
+        $this->selectedDb = (int)$db;
     }
 
     public function __destruct()
@@ -397,6 +392,12 @@ class Credis_Client {
             $this->setReadTimeout($this->readTimeout);
         }
 
+        if($this->authPassword !== null) {
+            $this->auth($this->authPassword);
+        }
+        if($this->selectedDb !== 0) {
+            $this->select($this->selectedDb);
+        }
         return $this;
     }
     /**
