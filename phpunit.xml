@@ -5,7 +5,6 @@
             <file>tests/SetUpBefore.php</file>
             <file>tests/CredisTest.php</file>
             <file>tests/CredisStandaloneTest.php</file>
-            <file>tests/CredisRwsplitTest.php</file>
             <file>tests/CredisClusterTest.php</file>
             <file>tests/CredisStandaloneClusterTest.php</file>
             <file>tests/CredisSentinelTest.php</file>

@@ -279,7 +279,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
   {
       $this->credis->close();
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':abc');
-      $this->setExpectedException('CredisException','Invalid host format; expected tcp://host[:port][/persistent]');
+      $this->setExpectedException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
       $this->credis->connect();
   }
 

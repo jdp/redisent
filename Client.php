@@ -334,7 +334,7 @@ class Credis_Client {
         if (preg_match('#^(tcp|unix)://(.*)$#', $this->host, $matches)) {
             if($matches[1] == 'tcp') {
                 if ( ! preg_match('#^([^:]+)(:([0-9]+))?(/(persistent))?$#', $matches[2], $matches)) {
-                    throw new CredisException('Invalid host format; expected tcp://host[:port][/persistent]');
+                    throw new CredisException('Invalid host format; expected tcp://host[:port][/persistence_identifier]');
                 }
                 $this->host = $matches[1];
                 $this->port = (int) (isset($matches[3]) ? $matches[3] : 6379);

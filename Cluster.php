@@ -59,7 +59,7 @@ class Credis_Cluster
    *   'password' => password,
    *   'timeout' => timeout,
    *   'alias' => alias,
-   *   'persistent' => persistent,
+   *   'persistent' => persistence_identifier,
    *   'master' => master
    * )
    *
@@ -177,7 +177,7 @@ class Credis_Cluster
    */
   public function __call($name, $args)
   {
-    if($this->masterClient instanceof Credis_Client && class_exists('Credis_Rwsplit') && !Credis_Rwsplit::isReadOnlyCommand($name)){
+    if($this->masterClient instanceof Credis_Client && !$this->isReadOnlyCommand($name)){
         return $this->masterClient->__call($name, $args);
     }
     if (isset($this->dont_hash[strtoupper($name)]) || !isset($args[0])) {
@@ -214,6 +214,66 @@ class Credis_Cluster
       }
     }
     return $this->ring[$server];
+  }
+
+  public function isReadOnlyCommand($command)
+  {
+      $readOnlyCommands = array(
+          'DBSIZE',
+          'INFO',
+          'MONITOR',
+          'EXISTS',
+          'TYPE',
+          'KEYS',
+          'SCAN',
+          'RANDOMKEY',
+          'TTL',
+          'GET',
+          'MGET',
+          'SUBSTR',
+          'STRLEN',
+          'GETRANGE',
+          'GETBIT',
+          'LLEN',
+          'LRANGE',
+          'LINDEX',
+          'SCARD',
+          'SISMEMBER',
+          'SINTER',
+          'SUNION',
+          'SDIFF',
+          'SMEMBERS',
+          'SSCAN',
+          'SRANDMEMBER',
+          'ZRANGE',
+          'ZREVRANGE',
+          'ZRANGEBYSCORE',
+          'ZREVRANGEBYSCORE',
+          'ZCARD',
+          'ZSCORE',
+          'ZCOUNT',
+          'ZRANK',
+          'ZREVRANK',
+          'ZSCAN',
+          'HGET',
+          'HMGET',
+          'HEXISTS',
+          'HLEN',
+          'HKEYS',
+          'HVALS',
+          'HGETALL',
+          'HSCAN',
+          'PING',
+          'AUTH',
+          'SELECT',
+          'ECHO',
+          'QUIT',
+          'OBJECT',
+          'BITCOUNT',
+          'TIME',
+          'SORT'
+      );
+      return in_array(strtoupper($command),$readOnlyCommands);
   }
 }
 

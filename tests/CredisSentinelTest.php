@@ -162,22 +162,4 @@ class CredisSentinelTest extends PHPUnit_Framework_TestCase
       $this->setExpectedException('CredisException','Unknown sentinel subcommand \'bla\'');
       $this->sentinel->bla();
   }
-  public function testFailover()
-  {
-      try {
-          sleep(1);
-          $this->assertTrue($this->sentinel->failover($this->sentinelConfig->clustername));
-          sleep(2);
-          $master = $this->sentinel->getMasterClient($this->sentinelConfig->clustername);
-          $this->assertInstanceOf('Credis_Client',$master);
-          $this->assertEquals($this->redisConfig[6]['port'],$master->getPort());
-          if(!$this->useStandalone){
-              TearDownAfter::tearDownAfterClass();
-              SetUpBefore::setUpBeforeClass();
-              sleep(4);
-          }
-      } catch(CredisException $e){
-          $this->assertEquals('NOGOODSLAVE No suitable slave to promote',$e->getMessage());
-      }
-  }
 }

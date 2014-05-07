@@ -116,4 +116,67 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
       $this->cluster->set('key','value');
       $this->assertEquals(6379,$this->cluster->byHash('key')->getPort());
   }
+  public function testRwsplit()
+  {
+    $readOnlyCommands = array(
+        'EXISTS',
+        'TYPE',
+        'KEYS',
+        'SCAN',
+        'RANDOMKEY',
+        'TTL',
+        'GET',
+        'MGET',
+        'SUBSTR',
+        'STRLEN',
+        'GETRANGE',
+        'GETBIT',
+        'LLEN',
+        'LRANGE',
+        'LINDEX',
+        'SCARD',
+        'SISMEMBER',
+        'SINTER',
+        'SUNION',
+        'SDIFF',
+        'SMEMBERS',
+        'SSCAN',
+        'SRANDMEMBER',
+        'ZRANGE',
+        'ZREVRANGE',
+        'ZRANGEBYSCORE',
+        'ZREVRANGEBYSCORE',
+        'ZCARD',
+        'ZSCORE',
+        'ZCOUNT',
+        'ZRANK',
+        'ZREVRANK',
+        'ZSCAN',
+        'HGET',
+        'HMGET',
+        'HEXISTS',
+        'HLEN',
+        'HKEYS',
+        'HVALS',
+        'HGETALL',
+        'HSCAN',
+        'PING',
+        'AUTH',
+        'SELECT',
+        'ECHO',
+        'QUIT',
+        'OBJECT',
+        'BITCOUNT',
+        'TIME',
+        'SORT'
+    );
+    foreach($readOnlyCommands as $command){
+        $this->assertTrue($this->cluster->isReadOnlyCommand($command));
+    }
+    $this->assertFalse($this->cluster->isReadOnlyCommand("SET"));
+    $this->assertFalse($this->cluster->isReadOnlyCommand("HDEL"));
+    $this->assertFalse($this->cluster->isReadOnlyCommand("RPUSH"));
+    $this->assertFalse($this->cluster->isReadOnlyCommand("SMOVE"));
+    $this->assertFalse($this->cluster->isReadOnlyCommand("ZADD"));
+  }
 }
