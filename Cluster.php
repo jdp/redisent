@@ -106,12 +106,20 @@ class Credis_Cluster
     }
     ksort($this->ring, SORT_NUMERIC);
     $this->nodes = array_keys($this->ring);
-    $this->dont_hash = array(
+    $this->dont_hash = array_flip(array(
       'RANDOMKEY', 'DBSIZE', 'PIPELINE', 'EXEC',
       'SELECT',    'MOVE',    'FLUSHDB',  'FLUSHALL',
       'SAVE',      'BGSAVE',  'LASTSAVE', 'SHUTDOWN',
       'INFO',      'MONITOR', 'SLAVEOF'
-    );
+    ));
+    if($this->masterClient !== null && count($this->clients()) == 0){
+        $this->clients[] = $this->masterClient;
+        for ($replica = 0; $replica <= $replicas; $replica++) {
+            $md5num = hexdec(substr(md5($this->masterClient->getHost().':'.$this->masterClient->getHost().'-'.$replica),0,7));
+            $this->ring[$md5num] = $clientNum;
+        }
+        $this->nodes = array_keys($this->ring);
+    }
   }
   /**
    * Get a client by index or alias.
@@ -177,7 +185,7 @@ class Credis_Cluster
    */
   public function __call($name, $args)
   {
-    if($this->masterClient instanceof Credis_Client && !$this->isReadOnlyCommand($name)){
+    if($this->masterClient !== null && !$this->isReadOnlyCommand($name)){
         return $this->masterClient->__call($name, $args);
     }
     if (isset($this->dont_hash[strtoupper($name)]) || !isset($args[0])) {

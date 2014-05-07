@@ -108,6 +108,15 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
       $this->assertFalse($this->cluster->client('slave')->set('key2','value'));
       $this->assertEquals('value',$this->cluster->get('key'));
   }
+  public function testMasterWithoutSlavesAndWriteOnlyFlag()
+  {
+      $this->tearDown();
+      $writeOnlyConfig = $this->config[0];
+      $writeOnlyConfig['write_only'] = true;
+      $this->cluster = new Credis_Cluster(array($writeOnlyConfig),2,$this->useStandalone);
+      $this->assertTrue($this->cluster->set('key','value'));
+      $this->assertEquals('value',$this->cluster->get('key'));
+  }
   public function testDontHashForCodeCoverage()
   {
     $this->assertInternalType('array',$this->cluster->info());
