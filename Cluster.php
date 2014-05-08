@@ -8,20 +8,21 @@
  * @package Credis
  */
 
-#require_once 'Credis/Client.php';
-
 /**
  * A generalized Credis_Client interface for a cluster of Redis servers
  */
 class Credis_Cluster
 {
-
   /**
    * Collection of Credis_Client objects attached to Redis servers
    * @var Credis_Client[]
    */
   protected $clients;
-  
+  /**
+   * If a server is set as master, all write commands go to that one
+   * @var Credis_Client
+   */
+  protected $masterClient;
   /**
    * Aliases of Credis_Client objects attached to Redis servers, used to route commands to specific servers
    * @see Credis_Cluster::to
@@ -54,30 +55,60 @@ class Credis_Cluster
    *  array(
    *   'host' => hostname,
    *   'port' => port,
+   *   'db' => db,
+   *   'password' => password,
    *   'timeout' => timeout,
-   *   'alias' => alias
+   *   'alias' => alias,
+   *   'persistent' => persistence_identifier,
+   *   'master' => master
+   *   'write_only'=> true/false
    * )
    *
    * @param array $servers The Redis servers in the cluster.
    * @param int $replicas
+   * @param bool $standAlone
    */
-  public function __construct($servers, $replicas = 128)
+  public function __construct($servers, $replicas = 128, $standAlone = false)
   {
     $this->clients = array();
+    $this->masterClient = null;
     $this->aliases = array();
     $this->ring = array();
-    $clientNum = 0;
+    $this->replicas = (int)$replicas;
+    $client = null;
     foreach ($servers as $server)
     {
-      $client = new Credis_Client($server['host'], $server['port'], isset($server['timeout']) ? $server['timeout'] : 2.5, isset($server['persistent']) ? $server['persistent'] : '');
+      if(is_array($server)){
+          $client = new Credis_Client(
+            $server['host'],
+            $server['port'],
+            isset($server['timeout']) ? $server['timeout'] : 2.5,
+            isset($server['persistent']) ? $server['persistent'] : '',
+            isset($server['db']) ? $server['db'] : 0,
+            isset($server['password']) ? $server['password'] : null
+          );
+          if (isset($server['alias'])) {
+            $this->aliases[$server['alias']] = $client;
+          }
+          if(isset($server['master']) && $server['master'] === true){
+            $this->masterClient = $client;
+            if(isset($server['write_only']) && $server['write_only'] === true){
+                continue;
+            }
+          }
+      } elseif($server instanceof Credis_Client){
+        $client = $server;
+      } else {
+          throw new CredisException('Server should either be an array or an instance of Credis_Client');
+      }
+      if($standAlone) {
+          $client->forceStandalone();
+      }
       $this->clients[] = $client;
-      if (isset($server['alias'])) {
-        $this->aliases[$server['alias']] = $client;
+      for ($replica = 0; $replica <= $this->replicas; $replica++) {
+          $md5num = hexdec(substr(md5($client->getHost().':'.$client->getPort().'-'.$replica),0,7));
+          $this->ring[$md5num] = count($this->clients)-1;
       }
-      for ($replica = 0; $replica <= $replicas; $replica++) {
-        $this->ring[crc32($server['host'].':'.$server['port'].'-'.$replica)] = $clientNum;
-      }
-      $clientNum++;
     }
     ksort($this->ring, SORT_NUMERIC);
     $this->nodes = array_keys($this->ring);
@@ -87,8 +118,40 @@ class Credis_Cluster
       'SAVE',      'BGSAVE',  'LASTSAVE', 'SHUTDOWN',
       'INFO',      'MONITOR', 'SLAVEOF'
     ));
+    if($this->masterClient !== null && count($this->clients()) == 0){
+        $this->clients[] = $this->masterClient;
+        for ($replica = 0; $replica <= $this->replicas; $replica++) {
+            $md5num = hexdec(substr(md5($this->masterClient->getHost().':'.$this->masterClient->getHost().'-'.$replica),0,7));
+            $this->ring[$md5num] = count($this->clients)-1;
+        }
+        $this->nodes = array_keys($this->ring);
+    }
   }
 
+  /**
+   * @param Credis_Client $masterClient
+   * @param bool $writeOnly
+   * @return Credis_Cluster
+   */
+  public function setMasterClient(Credis_Client $masterClient, $writeOnly=false)
+  {
+    if(!$masterClient instanceof Credis_Client){
+        throw new CredisException('Master client should be an instance of Credis_Client');
+    }
+    $this->masterClient = $masterClient;
+    if (!isset($this->aliases['master'])) {
+        $this->aliases['master'] = $masterClient;
+    }
+    if(!$writeOnly){
+        $this->clients[] = $this->masterClient;
+        for ($replica = 0; $replica <= $this->replicas; $replica++) {
+            $md5num = hexdec(substr(md5($this->masterClient->getHost().':'.$this->masterClient->getHost().'-'.$replica),0,7));
+            $this->ring[$md5num] = count($this->clients)-1;
+        }
+        $this->nodes = array_keys($this->ring);
+    }
+    return $this;
+  }
   /**
    * Get a client by index or alias.
    *
@@ -145,7 +208,7 @@ class Credis_Cluster
   }
 
   /**
-   * Execute a Redis command on the cluster with automatic consistent hashing
+   * Execute a Redis command on the cluster with automatic consistent hashing and read/write splitting
    *
    * @param string $name
    * @param array $args
@@ -153,13 +216,14 @@ class Credis_Cluster
    */
   public function __call($name, $args)
   {
-    if (isset($this->dont_hash[strtoupper($name)])) {
+    if($this->masterClient !== null && !$this->isReadOnlyCommand($name)){
+        $client = $this->masterClient;
+    }elseif (count($this->clients()) == 1 || isset($this->dont_hash[strtoupper($name)]) || !isset($args[0])) {
       $client = $this->clients[0];
     }
     else {
       $client = $this->byHash($args[0]);
     }
-
     return $client->__call($name, $args);
   }
 
@@ -171,7 +235,7 @@ class Credis_Cluster
    */
   public function hash($key)
   {
-    $needle = crc32($key);
+    $needle = hexdec(substr(md5($key),0,7));
     $server = $min = 0;
     $max = count($this->nodes) - 1;
     while ($max >= $min) {
@@ -190,5 +254,64 @@ class Credis_Cluster
     return $this->ring[$server];
   }
 
+  public function isReadOnlyCommand($command)
+  {
+      $readOnlyCommands = array(
+          'DBSIZE',
+          'INFO',
+          'MONITOR',
+          'EXISTS',
+          'TYPE',
+          'KEYS',
+          'SCAN',
+          'RANDOMKEY',
+          'TTL',
+          'GET',
+          'MGET',
+          'SUBSTR',
+          'STRLEN',
+          'GETRANGE',
+          'GETBIT',
+          'LLEN',
+          'LRANGE',
+          'LINDEX',
+          'SCARD',
+          'SISMEMBER',
+          'SINTER',
+          'SUNION',
+          'SDIFF',
+          'SMEMBERS',
+          'SSCAN',
+          'SRANDMEMBER',
+          'ZRANGE',
+          'ZREVRANGE',
+          'ZRANGEBYSCORE',
+          'ZREVRANGEBYSCORE',
+          'ZCARD',
+          'ZSCORE',
+          'ZCOUNT',
+          'ZRANK',
+          'ZREVRANK',
+          'ZSCAN',
+          'HGET',
+          'HMGET',
+          'HEXISTS',
+          'HLEN',
+          'HKEYS',
+          'HVALS',
+          'HGETALL',
+          'HSCAN',
+          'PING',
+          'AUTH',
+          'SELECT',
+          'ECHO',
+          'QUIT',
+          'OBJECT',
+          'BITCOUNT',
+          'TIME',
+          'SORT'
+      );
+      return in_array(strtoupper($command),$readOnlyCommands);
+  }
 }
 

@@ -15,14 +15,18 @@ class CredisTest extends PHPUnit_Framework_TestCase
     protected function setUp()
     {
         if($this->config === NULL) {
-            $configFile = dirname(__FILE__).'/test_config.json';
+            $configFile = dirname(__FILE__).'/redis_config.json';
             if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
                 $this->markTestSkipped('Could not load '.$configFile);
                 return;
             }
             $this->config = json_decode($config);
+            if(count($this->config) < 6) {
+              $this->markTestSkipped('Config file '.$configFile.' should contain at least 6 entries');
+              return;
+            }
         }
-        $this->credis = new Credis_Client($this->config->host, $this->config->port, $this->config->timeout);
+        $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout);
         if($this->useStandalone) {
             $this->credis->forceStandalone();
         } else if ( ! extension_loaded('redis')) {
@@ -30,7 +34,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
         }
         $this->credis->flushDb();
     }
-
     protected function tearDown()
     {
         if($this->credis) {
@@ -38,7 +41,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
             $this->credis = NULL;
         }
     }
-
     public function testFlush()
     {
         $this->credis->set('foo','FOO');
@@ -221,7 +223,6 @@ class CredisTest extends PHPUnit_Framework_TestCase
         } catch(CredisException $e) {
         }
     }
-
     public function testPubsub()
     {
         $timeout = 2;
@@ -265,4 +266,83 @@ class CredisTest extends PHPUnit_Framework_TestCase
             }
         }
     }
+  public function testDb()
+  {
+      $this->tearDown();
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      $this->assertTrue($this->credis->set('database',1));
+      $this->credis->close();
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,0);
+      $this->assertFalse($this->credis->get('database'));
+      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      $this->assertEquals(1,$this->credis->get('database'));
+
+  }
+
+  public function testPassword()
+  {
+      $this->tearDown();
+      $this->assertObjectHasAttribute('password',$this->config[4]);
+      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,$this->config[4]->password);
+      $this->assertInstanceOf('Credis_Client',$this->credis->connect());
+      $this->assertTrue($this->credis->set('key','value'));
+      $this->credis->close();
+      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,'wrongpassword');
+      $this->credis->connect();
+      $this->assertFalse($this->credis->set('key','value'));
+      $this->assertFalse($this->credis->auth('anotherwrongpassword'));
+      $this->assertTrue($this->credis->auth('thepassword'));
+      $this->assertTrue($this->credis->set('key','value'));
+  }
+  public function testGettersAndSetters()
+  {
+      $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
+      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->assertTrue($this->credis->isConnected());
+      $this->credis->close();
+      $this->assertFalse($this->credis->isConnected());
+      $this->credis = new Credis_Client($this->config[0]->host,$this->config[0]->port,null,'persistenceId');
+      $this->assertEquals('persistenceId',$this->credis->getPersistence());
+      $this->credis = new Credis_Client('localhost', 12345);
+      $this->credis->setMaxConnectRetries(1);
+      $this->setExpectedException('CredisException','Connection to Redis failed after 2 failures.');
+      $this->credis->connect();
+  }
+
+  public function testConnectionStrings()
+  {
+      $this->credis->close();
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port);
+      $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
+      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host);
+      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port.'/abc123');
+      $this->assertEquals('abc123',$this->credis->getPersistence());
+      $this->credis = new Credis_Client(realpath(__DIR__).'/redis.sock',0,null,'persistent');
+      $this->credis->connect();
+      $this->credis->set('key','value');
+      $this->assertEquals('value',$this->credis->get('key'));
+  }
+
+  public function testInvalidTcpConnectionstring()
+  {
+      $this->credis->close();
+      $this->setExpectedException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
+      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':abc');
+  }
+
+  public function testInvalidUnixSocketConnectionstring()
+  {
+      $this->credis->close();
+      $this->setExpectedException('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
+      $this->credis = new Credis_Client('unix://path/to/redis.sock');
+  }
+
+  public function testForceStandAloneAfterEstablishedConnection()
+  {
+      $this->credis->connect();
+      $this->setExpectedException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
+      $this->credis->forceStandalone();
+  }
 }

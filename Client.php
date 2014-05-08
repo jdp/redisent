@@ -275,14 +275,19 @@ class Credis_Client {
      * @param integer $port The port number of the Redis server
      * @param float $timeout  Timeout period in seconds
      * @param string $persistent  Flag to establish persistent connection
+     * @param int $db The selected datbase of the Redis server
+     * @param string $password The authentication password of the Redis server
      */
-    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $persistent = '')
+    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $persistent = '', $db = 0, $password = null)
     {
         $this->host = (string) $host;
         $this->port = (int) $port;
         $this->timeout = $timeout;
         $this->persistent = (string) $persistent;
         $this->standalone = ! extension_loaded('redis');
+        $this->authPassword = $password;
+        $this->selectedDb = (int)$db;
+        $this->convertHost();
     }
 
     public function __destruct()
@@ -291,7 +296,29 @@ class Credis_Client {
             $this->close();
         }
     }
-
+    /**
+     * Return the host of the Redis instance
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->host;
+    }
+    /**
+     * Return the port of the Redis instance
+     * @return int
+     */
+    public function getPort()
+    {
+        return $this->port;
+    }
+    /**
+     * @return string
+     */
+    public function getPersistence()
+    {
+        return $this->persistent;
+    }
     /**
      * @throws CredisException
      * @return Credis_Client
@@ -324,24 +351,16 @@ class Credis_Client {
         $this->closeOnDestruct = $flag;
         return $this;
     }
-
-    /**
-     * @throws CredisException
-     * @return Credis_Client
-     */
-    public function connect()
+    protected function convertHost()
     {
-        if ($this->connected) {
-            return $this;
-        }
         if (preg_match('#^(tcp|unix)://(.*)$#', $this->host, $matches)) {
             if($matches[1] == 'tcp') {
-                if ( ! preg_match('#^(.*)(?::(\d+))?(?:/(.*))?$#', $matches[2], $matches)) {
-                    throw new CredisException('Invalid host format; expected tcp://host[:port][/persistent]');
+                if ( ! preg_match('#^([^:]+)(:([0-9]+))?(/(.+))?$#', $matches[2], $matches)) {
+                    throw new CredisException('Invalid host format; expected tcp://host[:port][/persistence_identifier]');
                 }
                 $this->host = $matches[1];
-                $this->port = (int) (isset($matches[2]) ? $matches[2] : 6379);
-                $this->persistent = isset($matches[3]) ? $matches[3] : '';
+                $this->port = (int) (isset($matches[3]) ? $matches[3] : 6379);
+                $this->persistent = isset($matches[5]) ? $matches[5] : '';
             } else {
                 $this->host = $matches[2];
                 $this->port = NULL;
@@ -352,6 +371,16 @@ class Credis_Client {
         }
         if ($this->port !== NULL && substr($this->host,0,1) == '/') {
             $this->port = NULL;
+        }
+    }
+    /**
+     * @throws CredisException
+     * @return Credis_Client
+     */
+    public function connect()
+    {
+        if ($this->connected) {
+            return $this;
         }
         if ($this->standalone) {
             $flags = STREAM_CLIENT_CONNECT;
@@ -395,9 +424,21 @@ class Credis_Client {
             $this->setReadTimeout($this->readTimeout);
         }
 
+        if($this->authPassword !== null) {
+            $this->auth($this->authPassword);
+        }
+        if($this->selectedDb !== 0) {
+            $this->select($this->selectedDb);
+        }
         return $this;
     }
-
+    /**
+     * @return bool
+     */
+    public function isConnected()
+    {
+        return $this->connected;
+    }
     /**
      * Set the read timeout for the connection. Use 0 to disable timeouts entirely (or use a very long timeout
      * if not supported).

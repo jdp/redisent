@@ -1,1 +1,2 @@
-tests/test_config.json
+.idea
+phpunit.phar
