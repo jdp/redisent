@@ -287,6 +287,7 @@ class Credis_Client {
         $this->standalone = ! extension_loaded('redis');
         $this->authPassword = $password;
         $this->selectedDb = (int)$db;
+        $this->convertHost();
     }
 
     public function __destruct()
@@ -310,6 +311,13 @@ class Credis_Client {
     public function getPort()
     {
         return $this->port;
+    }
+    /**
+     * @return string
+     */
+    public function getPersistence()
+    {
+        return $this->persistent;
     }
     /**
      * @throws CredisException
@@ -343,19 +351,11 @@ class Credis_Client {
         $this->closeOnDestruct = $flag;
         return $this;
     }
-
-    /**
-     * @throws CredisException
-     * @return Credis_Client
-     */
-    public function connect()
+    protected function convertHost()
     {
-        if ($this->connected) {
-            return $this;
-        }
         if (preg_match('#^(tcp|unix)://(.*)$#', $this->host, $matches)) {
             if($matches[1] == 'tcp') {
-                if ( ! preg_match('#^([^:]+)(:([0-9]+))?(/(persistent))?$#', $matches[2], $matches)) {
+                if ( ! preg_match('#^([^:]+)(:([0-9]+))?(/(.+))?$#', $matches[2], $matches)) {
                     throw new CredisException('Invalid host format; expected tcp://host[:port][/persistence_identifier]');
                 }
                 $this->host = $matches[1];
@@ -371,6 +371,16 @@ class Credis_Client {
         }
         if ($this->port !== NULL && substr($this->host,0,1) == '/') {
             $this->port = NULL;
+        }
+    }
+    /**
+     * @throws CredisException
+     * @return Credis_Client
+     */
+    public function connect()
+    {
+        if ($this->connected) {
+            return $this;
         }
         if ($this->standalone) {
             $flags = STREAM_CLIENT_CONNECT;
