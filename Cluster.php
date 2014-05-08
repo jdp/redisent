@@ -217,9 +217,8 @@ class Credis_Cluster
   public function __call($name, $args)
   {
     if($this->masterClient !== null && !$this->isReadOnlyCommand($name)){
-        return $this->masterClient->__call($name, $args);
-    }
-    if (isset($this->dont_hash[strtoupper($name)]) || !isset($args[0])) {
+        $client = $this->masterClient;
+    }elseif (count($this->clients()) == 1 || isset($this->dont_hash[strtoupper($name)]) || !isset($args[0])) {
       $client = $this->clients[0];
     }
     else {
