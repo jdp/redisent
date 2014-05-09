@@ -16,7 +16,6 @@
 	"autoload": {
 		"classmap": [
 			"Client.php",
-            "Rwsplit.php",
 			"Cluster.php",
             "Sentinel.php"
 		]
