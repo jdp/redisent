@@ -129,7 +129,7 @@ class CredisSentinelTest extends PHPUnit_Framework_TestCase
       $cluster = $this->sentinel->createCluster($this->sentinelConfig->clustername);
       $this->assertInstanceOf('Credis_Cluster',$cluster);
       $this->assertCount(2,$cluster->clients());
-      $cluster = $this->sentinel->createCluster($this->sentinelConfig->clustername,1,false);
+      $cluster = $this->sentinel->createCluster($this->sentinelConfig->clustername,0,1,false);
       $this->assertInstanceOf('Credis_Cluster',$cluster);
       $this->assertCount(2,$cluster->clients());
       $this->setExpectedException('CredisException','The master is down');
@@ -140,6 +140,15 @@ class CredisSentinelTest extends PHPUnit_Framework_TestCase
       $cluster = $this->sentinel->getCluster($this->sentinelConfig->clustername);
       $this->assertInstanceOf('Credis_Cluster',$cluster);
       $this->assertCount(2,$cluster->clients());
+  }
+  public function testGetClusterOnDbNumber2()
+  {
+      $cluster = $this->sentinel->getCluster($this->sentinelConfig->clustername,2);
+      $this->assertInstanceOf('Credis_Cluster',$cluster);
+      $this->assertCount(2,$cluster->clients());
+      $clients = $cluster->clients();
+      $this->assertEquals(2,$clients[0]->getSelectedDb());
+      $this->assertEquals(2,$clients[1]->getSelectedDb());
   }
   public function testGetMasterAddressByName()
   {

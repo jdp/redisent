@@ -312,6 +312,15 @@ class Credis_Client {
     {
         return $this->port;
     }
+
+    /**
+     * Return the selected database
+     * @return int
+     */
+    public function getSelectedDb()
+    {
+        return $this->selectedDb;
+    }
     /**
      * @return string
      */
