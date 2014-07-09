@@ -298,6 +298,9 @@ class CredisTest extends PHPUnit_Framework_TestCase
   {
       $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
       $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->assertEquals($this->credis->getSelectedDb(),0);
+      $this->assertTrue($this->credis->select(2));
+      $this->assertEquals($this->credis->getSelectedDb(),2);
       $this->assertTrue($this->credis->isConnected());
       $this->credis->close();
       $this->assertFalse($this->credis->isConnected());
