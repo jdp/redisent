@@ -935,6 +935,13 @@ class Credis_Client {
                         throw new CredisException($error);
                     }
                     break;
+                default:
+                    $error = $this->redis->getLastError();
+                    $this->redis->clearLastError();
+                    if ($error) {
+                        throw new CredisException($error);
+                    }
+                    break;
             }
         }
 
