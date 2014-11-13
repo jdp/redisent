@@ -268,6 +268,11 @@ class Credis_Client {
     protected $renamedCommands;
 
     /**
+     * @var int
+     */
+    protected $requests = 0;
+
+    /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
      * $host may also be a path to a unix socket or a string in the form of tcp://[hostname]:[port] or unix://[path]
      *
@@ -567,8 +572,8 @@ class Credis_Client {
      */
     public function auth($password)
     {
+        $response = $this->__call('auth', array($password));
         $this->authPassword = $password;
-        $response = $this->__call('auth', array($this->authPassword));
         return $response;
     }
 
@@ -578,8 +583,8 @@ class Credis_Client {
      */
     public function select($index)
     {
+        $response = $this->__call('select', array($index));
         $this->selectedDb = (int) $index;
-        $response = $this->__call('select', array($this->selectedDb));
         return $response;
     }
 
@@ -890,7 +895,19 @@ class Credis_Client {
                     return $this;
                 }
 
-                $response = call_user_func_array(array($this->redis, $name), $args);
+                // Send request, retry one time when using persistent connections on the first request only
+                $this->requests++;
+                try {
+                    $response = call_user_func_array(array($this->redis, $name), $args);
+                } catch (RedisException $e) {
+                    if ($this->persistent && $this->requests == 1 && $e->getMessage() == 'read error on connection') {
+                        $this->connected = FALSE;
+                        $this->connect();
+                        $response = call_user_func_array(array($this->redis, $name), $args);
+                    } else {
+                        throw $e;
+                    }
+                }
             }
             // Wrap exceptions
             catch(RedisException $e) {
