@@ -270,6 +270,9 @@ class Credis_Client {
      */
     protected $requests = 0;
     
+    /**
+     * @var bool
+     */
     protected $subscribed = false;
     
 
@@ -303,6 +306,9 @@ class Credis_Client {
         }
     }
     
+    /**
+     * @return bool
+     */
     public function isSubscribed()
     {
     	return $this->subscribed;
@@ -595,11 +601,15 @@ class Credis_Client {
         return $response;
     }
     
-
+    /**
+     * @param string|array $pattern
+     * @return array
+     */
     public function pUnsubscribe()
     {
     	list($command, $channel, $subscribedChannels) = $this->__call('punsubscribe', func_get_args());
     	$this->subscribed = $subscribedChannels > 0;
+    	return array($command, $channel, $subscribedChannels);
     }
 
     /**
@@ -650,10 +660,15 @@ class Credis_Client {
         }
     }
 
+    /**
+     * @param string|array $pattern
+     * @return array
+     */
     public function unsubscribe()
     {
     	list($command, $channel, $subscribedChannels) = $this->__call('unsubscribe', func_get_args());
     	$this->subscribed = $subscribedChannels > 0;
+    	return array($command, $channel, $subscribedChannels);
     }
 
     /**
