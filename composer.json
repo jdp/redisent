@@ -1,6 +1,6 @@
 {
     "name": "redisent/redisent",
-    "description": "Redisent",
+    "description": "Redisent is a simple, no-nonsense interface to the Redis data structure store for modest developers. It is designed to flexible and tolerant of changes to the Redis protocol.",
     "keywords": ["redis"],
     "type": "library",
     "homepage": "https://github.com/jdp/redisent",
