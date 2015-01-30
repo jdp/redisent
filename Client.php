@@ -737,6 +737,24 @@ class Credis_Client {
                     $eArgs = (array) array_shift($args);
                     $args = array($script, count($keys), $keys, $eArgs);
                     break;
+                case 'set':
+                    // The php redis module has different behaviour with ttl
+                    // https://github.com/phpredis/phpredis#set
+                    if (count($args) === 3 && is_int($args[2])) { 
+                        $args = array($args[0], $args[1], array('EX', $args[2]));
+                    } elseif (count($args) === 3 && is_array($args[2])) {
+                        $tmp_args = $args;
+                        $args = array($tmp_args[0], $tmp_args[1]);
+                        foreach ($tmp_args[2] as $k=>$v) {
+                            if (is_string($k)) {
+                                $args[] = array($k,$v);
+                            } elseif (is_int($k)) {
+                                $args[] = $v;
+                            }
+                        }
+                        unset($tmp_args);
+                    }
+                    break;
             }
             // Flatten arguments
             $argsFlat = NULL;
