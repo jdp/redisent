@@ -65,6 +65,10 @@ class CredisException extends Exception
  * @method array         sort(string $key, string $arg1, string $valueN = null)
  * @method int           ttl(string $key)
  * @method string        type(string $key)
+ * @method bool|array    scan(int &$iterator, string $pattern = null, int count = null)
+ * @method bool|array    sscan(int &$iterator, string $pattern = null, int count = null)
+ * @method bool|array    hscan(int &$iterator, string $pattern = null, int count = null)
+ * @method bool|array    zscan(int &$iterator, string $pattern = null, int count = null)
  *
  * Scalars:
  * @method int           append(string $key, string $value)
@@ -613,6 +617,50 @@ class Credis_Client {
     }
 
     /**
+     * @param int $Iterator
+     * @param string $pattern
+     * @param int $Iterator
+     * @return bool | Array
+     */    
+    public function scan(&$Iterator, $pattern = null, $count = null)
+    {
+        return $this->__call('scan', array(&$Iterator, $pattern, $count));
+    }
+
+    /**
+     * @param int $Iterator
+     * @param string $pattern
+     * @param int $Iterator
+     * @return bool | Array
+     */    
+    public function hscan(&$Iterator, $pattern = null, $count = null)
+    {
+        return $this->__call('hscan', array(&$Iterator, $pattern, $count));
+    }
+    
+    /**
+     * @param int $Iterator
+     * @param string $pattern
+     * @param int $Iterator
+     * @return bool | Array
+     */    
+    public function sscan(&$Iterator, $pattern = null, $count = null)
+    {
+        return $this->__call('sscan', array(&$Iterator, $pattern, $count));
+    }
+    
+    /**
+     * @param int $Iterator
+     * @param string $pattern
+     * @param int $Iterator
+     * @return bool | Array
+     */    
+    public function zscan(&$Iterator, $pattern = null, $count = null)
+    {
+        return $this->__call('zscan', array(&$Iterator, $pattern, $count));
+    }
+
+    /**
      * @param string|array $patterns
      * @param $callback
      * @return $this|array|bool|Credis_Client|mixed|null|string
@@ -755,6 +803,28 @@ class Credis_Client {
                         unset($tmp_args);
                     }
                     break;
+                case 'scan':
+                case 'sscan':
+                case 'hscan':
+                case 'zscan':
+                    $ref =& $args[0];
+                    if (empty($ref))
+                    {
+                        $ref = 0;
+                    }
+                    $eArgs = array($ref);
+                    if (!empty($args[1]))
+                    {
+                        $eArgs[] = 'MATCH';
+                        $eArgs[] = $args[1];
+                    }
+                    if (!empty($args[2]))
+                    {
+                        $eArgs[] = 'COUNT';
+                        $eArgs[] = $args[2];
+                    }
+                    $args = $eArgs;
+                    break;
             }
             // Flatten arguments
             $argsFlat = NULL;
@@ -842,6 +912,20 @@ class Credis_Client {
             $this->write_command($command);
             $response = $this->read_reply($name);
 
+            switch($name)
+            {
+                case 'scan':
+                case 'sscan':
+                case 'hscan':
+                case 'zscan':
+                    $ref = array_shift($response);
+                    if (empty($ref))
+                    {
+                        $response = false;
+                    }
+                    break;
+            }
+
             // Watch mode disables reconnect so error is thrown
             if($name == 'watch') {
                 $this->isWatching = TRUE;
@@ -901,6 +985,13 @@ class Credis_Client {
                     break;
                 case 'subscribe':
                 case 'psubscribe':
+                    break;
+                case 'scan':
+                case 'sscan':
+                case 'hscan':
+                case 'zscan':
+                    // allow phpredis to see the caller's reference
+                    //$param_ref =& $args[0];
                     break;
                 default:
                     // Flatten arguments
