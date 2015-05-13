@@ -113,7 +113,7 @@ class CredisException extends Exception
  * @method bool|int      hLen(string $key)
  * @method bool          hDel(string $key, string $field)
  * @method array         hKeys(string $key, string $field)
- * @method array         hVals(string $key, string $field)
+ * @method array         hVals(string $key)
  * @method array         hGetAll(string $key)
  * @method bool          hExists(string $key, string $field)
  * @method int           hIncrBy(string $key, string $field, int $value)
