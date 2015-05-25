@@ -55,6 +55,9 @@ class Redis {
 	 */
 	function __construct($dsn = 'redis://localhost:6379', $timeout = null) {
 		$this->dsn = parse_url($dsn);
+		if(!is_array($this->dsn)){
+		    throw new \Exception('connection param maybe not correct,for a full example,$redis = new redisent\Redis("redis://:password@localhost:6379");');
+		}
 		$host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
 		$port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
 		$timeout = $timeout ?: ini_get("default_socket_timeout");
