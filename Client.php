@@ -1232,14 +1232,17 @@ class Credis_Client {
      * @param array $in
      * @return array
      */
-    private static function _flattenArguments(array $in, &$out = array())
+    private static function _flattenArguments(array $arguments, &$out = array())
     {
-        foreach ($in as $key => $val) {
-            if (is_array($val)) {
+        foreach ($arguments as $key => $arg) {
+            if (!is_int($key)) {
                 $out[] = $key;
-                self::_flattenArguments($val, $out);
+            }
+            
+            if (is_array($arg)) {
+                self::_flattenArguments($arg, $out);
             } else {
-                $out[] = $val;
+                $out[] = $arg;
             }
         }
 
