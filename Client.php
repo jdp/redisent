@@ -827,28 +827,7 @@ class Credis_Client {
                     break;
             }
             // Flatten arguments
-            $argsFlat = NULL;
-            foreach($args as $index => $arg) {
-                if(is_array($arg)) {
-                    if($argsFlat === NULL) {
-                        $argsFlat = array_slice($args, 0, $index);
-                    }
-                    if($name == 'mset' || $name == 'msetnx' || $name == 'hmset') {
-                      foreach($arg as $key => $value) {
-                        $argsFlat[] = $key;
-                        $argsFlat[] = $value;
-                      }
-                    } else {
-                      $argsFlat = array_merge($argsFlat, $arg);
-                    }
-                } else if($argsFlat !== NULL) {
-                    $argsFlat[] = $arg;
-                }
-            }
-            if($argsFlat !== NULL) {
-                $args = $argsFlat;
-                $argsFlat = NULL;
-            }
+            $args = self::_flattenArguments($args);
 
             // In pipeline mode
             if($this->usePipeline)
@@ -995,21 +974,7 @@ class Credis_Client {
                     break;
                 default:
                     // Flatten arguments
-                    $argsFlat = NULL;
-                    foreach($args as $index => $arg) {
-                        if(is_array($arg)) {
-                            if($argsFlat === NULL) {
-                                $argsFlat = array_slice($args, 0, $index);
-                            }
-                            $argsFlat = array_merge($argsFlat, $arg);
-                        } else if($argsFlat !== NULL) {
-                            $argsFlat[] = $arg;
-                        }
-                    }
-                    if($argsFlat !== NULL) {
-                        $args = $argsFlat;
-                        $argsFlat = NULL;
-                    }
+                    $args = self::_flattenArguments($args);
             }
 
             try {
@@ -1256,4 +1221,31 @@ class Credis_Client {
         return sprintf('$%d%s%s', strlen($arg), CRLF, $arg);
     }
 
+    /**
+     * Flatten arguments
+     *
+     * If an argument is an array, the key is inserted as argument followed by the array values
+     *  array('zrangebyscore', '-inf', 123, array('limit' => array('0', '1')))
+     * becomes
+     *  array('zrangebyscore', '-inf', 123, 'limit', '0', '1')
+     *
+     * @param array $in
+     * @return array
+     */
+    private static function _flattenArguments(array $arguments, &$out = array())
+    {
+        foreach ($arguments as $key => $arg) {
+            if (!is_int($key)) {
+                $out[] = $key;
+            }
+            
+            if (is_array($arg)) {
+                self::_flattenArguments($arg, $out);
+            } else {
+                $out[] = $arg;
+            }
+        }
+
+        return $out;
+    }
 }
