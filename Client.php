@@ -914,7 +914,7 @@ class Credis_Client {
                                 $item = $value;
                             } else {
                                 // 2nd value is the score
-                                $out[$value] = (float) $item;
+                                $out[$item] = (float) $value;
                                 $item = null;
                             }
                         }
