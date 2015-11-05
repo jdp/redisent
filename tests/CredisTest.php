@@ -129,6 +129,37 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(array(), $this->credis->sMembers('noexist'));
     }
 
+    public function testSortedSets()
+    {
+        $this->assertEquals(1, $this->credis->zAdd('myset', 1, 'Hello'));
+        $this->assertEquals(1, $this->credis->zAdd('myset', 2.123, 'World'));
+        $this->assertEquals(1, $this->credis->zAdd('myset', 10, 'And'));
+        $this->assertEquals(1, $this->credis->zAdd('myset', 11, 'Goodbye'));
+
+        $this->assertEquals(4, count($this->credis->zRangeByScore('myset', '-inf', '+inf')));
+        $this->assertEquals(2, count($this->credis->zRangeByScore('myset', '1', '9')));
+
+        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('limit' => array(1, 2)));
+        $this->assertEquals(2, count($range));
+        $this->assertEquals('World', $range[0]);
+        $this->assertEquals('And', $range[1]);
+
+        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores', 'limit' => array(1, 2)));
+        $this->assertEquals(2, count($range));
+        $this->assertTrue(array_key_exists('World', $range));
+        $this->assertEquals(2.123, $range['World']);
+        $this->assertTrue(array_key_exists('And', $range));
+        $this->assertEquals(10, $range['And']);
+
+        $range = $this->credis->zRangeByScore('myset', 10, '+inf', array('withscores'));
+        $this->assertEquals(2, count($range));
+        $this->assertTrue(array_key_exists('And', $range));
+        $this->assertEquals(10, $range['And']);
+        $this->assertTrue(array_key_exists('Goodbye', $range));
+        $this->assertEquals(11, $range['Goodbye']);
+
+    }
+
     public function testHashes()
     {
         $this->assertEquals(1, $this->credis->hSet('hash','field1','foo'));
