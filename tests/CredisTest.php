@@ -144,20 +144,23 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('World', $range[0]);
         $this->assertEquals('And', $range[1]);
 
-        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores', 'limit' => array(1, 2)));
+        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => true, 'limit' => array(1, 2)));
         $this->assertEquals(2, count($range));
         $this->assertTrue(array_key_exists('World', $range));
         $this->assertEquals(2.123, $range['World']);
         $this->assertTrue(array_key_exists('And', $range));
         $this->assertEquals(10, $range['And']);
 
-        $range = $this->credis->zRangeByScore('myset', 10, '+inf', array('withscores'));
+        $range = $this->credis->zRangeByScore('myset', 10, '+inf', array('withscores' => true));
         $this->assertEquals(2, count($range));
         $this->assertTrue(array_key_exists('And', $range));
         $this->assertEquals(10, $range['And']);
         $this->assertTrue(array_key_exists('Goodbye', $range));
         $this->assertEquals(11, $range['Goodbye']);
 
+        // withscores-option is off
+        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => true));
+        $this->assertEquals(4, count($range));
     }
 
     public function testHashes()
