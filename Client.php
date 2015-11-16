@@ -826,6 +826,19 @@ class Credis_Client {
                     }
                     $args = $eArgs;
                     break;
+                case 'zrangebyscore':
+                    if (isset($args[3]) && is_array($args[3])) {
+                        // map options
+                        $cArgs = array();
+                        if (!empty($args[3]['withscores'])) {
+                            $cArgs[] = 'withscores';
+                        }
+                        if (array_key_exists('limit', $args[3])) {
+                            $cArgs[] = array('limit' => $args[3]['limit']);
+                        }
+                        $args[3] = $cArgs;
+                    }
+                    break;
             }
             // Flatten arguments
             $args = self::_flattenArguments($args);
@@ -954,17 +967,6 @@ class Credis_Client {
                 case 'hmget':
                 case 'del':
                 case 'zrangebyscore':
-                    if (isset($args[3]) && is_array($args[3])) {
-                        // map options
-                        $cArgs = array();
-                        if (in_array('withscores', $args[3])) {
-                            $cArgs['withscores'] = true;
-                        }
-                        if (array_key_exists('limit', $args[3])) {
-                            $cArgs['limit'] = $args[3]['limit'];
-                        }
-                        $args[3] = $cArgs;
-                    }
                     break;
                 case 'mget':
                     if(isset($args[0]) && ! is_array($args[0])) {
