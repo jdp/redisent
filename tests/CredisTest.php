@@ -159,8 +159,14 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(11, $range['Goodbye']);
 
         // withscores-option is off
-        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => true));
+        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores'));
         $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range)); // expecting numeric array without scores
+        
+        $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => false));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range)); 
+
     }
 
     public function testHashes()
