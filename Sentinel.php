@@ -236,4 +236,20 @@ class Credis_Sentinel
     {
         return $this->_client->sentinel('failover',$name);
     }
+
+    /**
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->_client->getHost();
+    }
+
+    /**
+     * @return int
+     */
+    public function getPort()
+    {
+        return $this->_client->getPort();
+    }
 }
