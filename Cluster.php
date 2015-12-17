@@ -191,7 +191,7 @@ class Credis_Cluster
     $name = array_shift($args);
     $results = array();
     foreach($this->clients as $client) {
-      $results[] = $client->__call($name, $args);
+      $results[] = call_user_func_array([$client, $name], $args);
     }
     return $results;
   }
@@ -224,7 +224,7 @@ class Credis_Cluster
     else {
       $client = $this->byHash($args[0]);
     }
-    return $client->__call($name, $args);
+    return call_user_func_array([$client, $name], $args);
   }
 
   /**
