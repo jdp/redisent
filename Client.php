@@ -65,10 +65,6 @@ class CredisException extends Exception
  * @method array         sort(string $key, string $arg1, string $valueN = null)
  * @method int           ttl(string $key)
  * @method string        type(string $key)
- * @method bool|array    scan(int &$iterator, string $pattern = null, int count = null)
- * @method bool|array    sscan(int &$iterator, string $pattern = null, int count = null)
- * @method bool|array    hscan(int &$iterator, string $pattern = null, int count = null)
- * @method bool|array    zscan(int &$iterator, string $pattern = null, int count = null)
  *
  * Scalars:
  * @method int           append(string $key, string $value)
