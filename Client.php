@@ -353,6 +353,9 @@ class Credis_Client {
      */
     public function forceStandalone()
     {
+        if ($this->standalone) {
+            return $this;
+        }
         if($this->connected) {
             throw new CredisException('Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
         }
