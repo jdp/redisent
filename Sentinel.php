@@ -42,16 +42,23 @@ class Credis_Sentinel
      */
     protected $_standAlone = false;
     /**
+     * Store the AUTH password used by Credis_Client instances
+     * @var string
+     */
+    protected $_authPassword = '';
+    /**
      * Connect with a Sentinel node. Sentinel will do the master and slave discovery
      * @param Credis_Client $client
+     * @param string $password
      */
-    public function __construct(Credis_Client $client)
+    public function __construct(Credis_Client $client, $password = '')
     {
         if(!$client instanceof Credis_Client){
             throw new CredisException('Sentinel client should be an instance of Credis_Client');
         }
         $client->forceStandalone();
         $this->_client = $client;
+        $this->_authPassword = $password;
     }
     /**
      * @return Credis_Sentinel
@@ -72,7 +79,7 @@ class Credis_Sentinel
         if(!isset($master[0]) || !isset($master[1])){
             throw new CredisException('Master not found');
         }
-        return new Credis_Client($master[0],$master[1]);
+        return new Credis_Client($master[0],$master[1],null,'',0,$this->_authPassword);
     }
     /**
      * If a Credis_Client object exists for a master, return it. Otherwise create one and return it
@@ -100,7 +107,7 @@ class Credis_Sentinel
                 throw new CredisException('Can\' retrieve slave status');
             }
             if(!strstr($slave[9],'s_down') && !strstr($slave[9],'disconnected')) {
-                $workingSlaves[] = new Credis_Client($slave[3],$slave[5]);
+                $workingSlaves[] = new Credis_Client($slave[3],$slave[5],null,'',0,$this->_authPassword);
             }
         }
         return $workingSlaves;
@@ -140,20 +147,20 @@ class Credis_Sentinel
         $slaves = $this->slaves($name);
         foreach($slaves as $slave){
             if(!strstr($slave[9],'s_down') && !strstr($slave[9],'disconnected')) {
-                $workingClients[] =  array('host'=>$slave[3],'port'=>$slave[5],'master'=>false,'db'=>$db);
+                $workingClients[] =  array('host'=>$slave[3],'port'=>$slave[5],'master'=>false,'db'=>$db,'password'=>$this->_authPassword);
             }
         }
         if(count($workingClients)>0){
             if($selectRandomSlave){
                 if(!$writeOnly){
-                    $workingClients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>false,'db'=>$db);
+                    $workingClients[] = array('host'=>$master[3],'port'=>$master[5],'master'=>false,'db'=>$db,'password'=>$this->_authPassword);
                 }
                 $clients[] = $workingClients[rand(0,count($workingClients)-1)];
             } else {
                 $clients = $workingClients;
             }
         }
-        $clients[] = array('host'=>$master[3],'port'=>$master[5], 'db'=>$db ,'master'=>true,'write_only'=>$writeOnly);
+        $clients[] = array('host'=>$master[3],'port'=>$master[5], 'db'=>$db ,'master'=>true,'write_only'=>$writeOnly,'password'=>$this->_authPassword);
         return new Credis_Cluster($clients,$replicas,$this->_standAlone);
     }
     /**
