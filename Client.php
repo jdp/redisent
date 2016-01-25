@@ -455,7 +455,7 @@ class Credis_Client {
             $this->setReadTimeout($this->readTimeout);
         }
 
-        if($this->authPassword !== null) {
+        if($this->authPassword) {
             $this->auth($this->authPassword);
         }
         if($this->selectedDb !== 0) {
