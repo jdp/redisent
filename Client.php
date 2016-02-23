@@ -1136,7 +1136,7 @@ class Credis_Client {
                 $this->connected = FALSE;
                 throw new CredisException('Failed to write entire command to stream');
             }
-            $lastFailed = !!$fwrite;
+            $lastFailed = $fwrite == 0;
         }
     }
 
