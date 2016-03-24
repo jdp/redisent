@@ -1016,6 +1016,7 @@ class Credis_Client {
                     } else {
                         $this->isMulti = TRUE;
                         $this->redisMulti = call_user_func_array(array($this->redis, $name), $args);
+                        return $this;
                     }
                 }
                 else if($name == 'exec' || $name == 'discard') {
