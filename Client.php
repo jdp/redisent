@@ -136,10 +136,12 @@ class CredisException extends Exception
  * @method int           rPushX(string $key, mixed $value)
  *
  * Sorted Sets:
- * @method array         zrangebyscore(string $key, mixed $start, mixed $stop, array $args = null)
- * @method array         zrevrangebyscore(string $key, mixed $start, mixed $stop, array $args = null)
- * @method array         zrange(string $key, mixed $start, mixed $stop, array $args = null)
- * @method array         zrevrange(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method int           zCard(string $key)
+ * @method array         zRangeByScore(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method array         zRevRangeByScore(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method int           zRemRangeByScore(string $key, mixed $start, mixed $stop)
+ * @method array         zRange(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method array         zRevRange(string $key, mixed $start, mixed $stop, array $args = null)
  * TODO
  *
  * Pub/Sub
