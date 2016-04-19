@@ -137,6 +137,9 @@ class CredisException extends Exception
  *
  * Sorted Sets:
  * @method array         zrangebyscore(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method array         zrevrangebyscore(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method array         zrange(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method array         zrevrange(string $key, mixed $start, mixed $stop, array $args = null)
  * TODO
  *
  * Pub/Sub
@@ -826,13 +829,16 @@ class Credis_Client {
                     $args = $eArgs;
                     break;
                 case 'zrangebyscore':
+                case 'zrevrangebyscore':
+                case 'zrange':
+                case 'zrevrange':
                     if (isset($args[3]) && is_array($args[3])) {
                         // map options
                         $cArgs = array();
                         if (!empty($args[3]['withscores'])) {
                             $cArgs[] = 'withscores';
                         }
-                        if (array_key_exists('limit', $args[3])) {
+                        if (($name == 'zrangebyscore' || $name == 'zrevrangebyscore') && array_key_exists('limit', $args[3])) {
                             $cArgs[] = array('limit' => $args[3]['limit']);
                         }
                         $args[3] = $cArgs;
@@ -916,7 +922,8 @@ class Credis_Client {
                         $response = false;
                     }
                     break;
-                case 'zrangebyscore';
+                case 'zrangebyscore':
+                case 'zrevrangebyscore':
                     if (in_array('withscores', $args, true)) {
                         // Map array of values into key=>score list like phpRedis does
                         $item = null;
@@ -966,6 +973,9 @@ class Credis_Client {
                 case 'hmget':
                 case 'del':
                 case 'zrangebyscore':
+                case 'zrevrangebyscore':
+                case 'zrange':
+                case 'zrevrange':
                     break;
                 case 'mget':
                     if(isset($args[0]) && ! is_array($args[0])) {
