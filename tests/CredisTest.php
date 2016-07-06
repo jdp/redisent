@@ -388,4 +388,10 @@ class CredisTest extends PHPUnit_Framework_TestCase
       $this->setExpectedException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
       $this->credis->forceStandalone();
   }
+  public function testHscan()
+  {
+      $this->credis->hmset('hash','name','Jack','age',33);
+      $result = $this->credis->hscan($a,'hash','n*');
+      $this->assertEquals($result,['name'=>'Jack']);
+	}
 }

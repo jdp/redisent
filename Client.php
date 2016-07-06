@@ -633,15 +633,16 @@ class Credis_Client {
     }
 
     /**
-     * @param int $Iterator
-     * @param string $pattern
-     * @param int $Iterator
-     * @return bool | Array
-     */    
-    public function hscan(&$Iterator, $pattern = null, $count = null)
-    {
-        return $this->__call('hscan', array(&$Iterator, $pattern, $count));
-    }
+	 * @param int $Iterator
+	 * @param string $field
+	 * @param string $pattern
+	 * @param int $count
+	 * @return bool | Array
+	 */
+	public function hscan(&$Iterator, $field, $pattern = null, $count = null)
+	{
+		return $this->__call('hscan', array(&$Iterator,$field, $pattern, $count));
+	}
     
     /**
      * @param int $Iterator
@@ -810,7 +811,6 @@ class Credis_Client {
                     break;
                 case 'scan':
                 case 'sscan':
-                case 'hscan':
                 case 'zscan':
                     $ref =& $args[0];
                     if (empty($ref))
@@ -830,6 +830,25 @@ class Credis_Client {
                     }
                     $args = $eArgs;
                     break;
+                case 'hscan':
+					$ref =& $args[0];
+					if (empty($ref))
+					{
+						$ref = 0;
+					}
+					$eArgs = array($args[1],$ref);
+					if (!empty($args[2]))
+					{
+						$eArgs[] = 'MATCH';
+						$eArgs[] = $args[2];
+					}
+					if (!empty($args[3]))
+					{
+						$eArgs[] = 'COUNT';
+						$eArgs[] = $args[4];
+					}
+					$args = $eArgs;
+					break;
                 case 'zrangebyscore':
                 case 'zrevrangebyscore':
                 case 'zrange':
@@ -916,7 +935,6 @@ class Credis_Client {
             {
                 case 'scan':
                 case 'sscan':
-                case 'hscan':
                 case 'zscan':
                     $ref = array_shift($response);
                     if (empty($ref))
@@ -924,6 +942,15 @@ class Credis_Client {
                         $response = false;
                     }
                     break;
+                case 'hscan':
+					$response   = $response[1];
+					$count  = count($response);
+					$out    = [];
+					for($i  = 0;$i < $count;$i+=2){
+						$out[$response[$i]] = $response[$i+1];
+					}
+					$response= $out;
+					break;
                 case 'zrangebyscore':
                 case 'zrevrangebyscore':
                     if (in_array('withscores', $args, true)) {
