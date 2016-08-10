@@ -390,8 +390,37 @@ class CredisTest extends PHPUnit_Framework_TestCase
   }
   public function testHscan()
   {
-      $this->credis->hmset('hash','name','Jack','age',33);
-      $result = $this->credis->hscan($a,'hash','n*');
+      $this->credis->hmset('hash',array('name' => 'Jack','age' =>33));
+      $iterator = null;
+      $result = $this->credis->hscan($iterator,'hash','n*');
+      $this->assertEquals($iterator,0);
       $this->assertEquals($result,['name'=>'Jack']);
 	}
+    public function testSscan()
+    {
+        $this->credis->sadd('set','name','Jack');
+        $this->credis->sadd('set','age','33');
+        $iterator = null;
+        $result = $this->credis->sscan($iterator,'set','n*');
+        $this->assertEquals($iterator,0);
+        $this->assertEquals($result,[0=>'name']);
+    }
+    public function testZscan()
+    {
+        $this->credis->zadd('sortedset',0,'name');
+        $this->credis->zadd('sortedset',1,'age');
+        $iterator = null;
+        $result = $this->credis->zscan($iterator,'sortedset','n*');
+        $this->assertEquals($iterator,0);
+        $this->assertEquals($result,['name'=>'0']);
+    }
+    public function testscan()
+    {
+        $this->credis->set('name','Jack');
+        $this->credis->set('age','33');
+        $iterator = null;
+        $result = $this->credis->scan($iterator,'n*');
+        $this->assertEquals($iterator,0);
+        $this->assertEquals($result,['name']);
+    }
 }

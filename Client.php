@@ -641,29 +641,31 @@ class Credis_Client {
 	 */
 	public function hscan(&$Iterator, $field, $pattern = null, $count = null)
 	{
-		return $this->__call('hscan', array(&$Iterator,$field, $pattern, $count));
+		return $this->__call('hscan', array($field, &$Iterator, $pattern, $count));
 	}
     
     /**
      * @param int $Iterator
+     * @param string $field
      * @param string $pattern
      * @param int $Iterator
      * @return bool | Array
      */    
-    public function sscan(&$Iterator, $pattern = null, $count = null)
+    public function sscan(&$Iterator, $field, $pattern = null, $count = null)
     {
-        return $this->__call('sscan', array(&$Iterator, $pattern, $count));
+        return $this->__call('sscan', array($field, &$Iterator, $pattern, $count));
     }
     
     /**
      * @param int $Iterator
+     * @param string $field
      * @param string $pattern
      * @param int $Iterator
      * @return bool | Array
      */    
-    public function zscan(&$Iterator, $pattern = null, $count = null)
+    public function zscan(&$Iterator, $field, $pattern = null, $count = null)
     {
-        return $this->__call('zscan', array(&$Iterator, $pattern, $count));
+        return $this->__call('zscan', array($field, &$Iterator, $pattern, $count));
     }
 
     /**
@@ -810,8 +812,6 @@ class Credis_Client {
                     }
                     break;
                 case 'scan':
-                case 'sscan':
-                case 'zscan':
                     $ref =& $args[0];
                     if (empty($ref))
                     {
@@ -830,13 +830,15 @@ class Credis_Client {
                     }
                     $args = $eArgs;
                     break;
+                case 'sscan':
+                case 'zscan':
                 case 'hscan':
-					$ref =& $args[0];
+					$ref =& $args[1];
 					if (empty($ref))
 					{
 						$ref = 0;
 					}
-					$eArgs = array($args[1],$ref);
+					$eArgs = array($args[0],$ref);
 					if (!empty($args[2]))
 					{
 						$eArgs[] = 'MATCH';
@@ -935,21 +937,22 @@ class Credis_Client {
             {
                 case 'scan':
                 case 'sscan':
-                case 'zscan':
                     $ref = array_shift($response);
-                    if (empty($ref))
-                    {
-                        $response = false;
-                    }
+                    $response = empty($response[0]) ? array() : $response[0];
                     break;
                 case 'hscan':
-					$response   = $response[1];
-					$count  = count($response);
-					$out    = [];
-					for($i  = 0;$i < $count;$i+=2){
-						$out[$response[$i]] = $response[$i+1];
-					}
-					$response= $out;
+                case 'zscan':
+                    $ref = array_shift($response);
+                    $response = empty($response[0]) ? array() : $response[0];
+                    if (!empty($response) && is_array($response))
+                    {
+                        $count  = count($response);
+                        $out    = array();
+                        for($i  = 0;$i < $count;$i+=2){
+                            $out[$response[$i]] = $response[$i+1];
+                        }
+                        $response = $out;
+                    }
 					break;
                 case 'zrangebyscore':
                 case 'zrevrangebyscore':
