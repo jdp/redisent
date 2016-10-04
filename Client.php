@@ -50,8 +50,10 @@ class CredisException extends Exception
  * @method array         exec()
  * @method string        flushAll()
  * @method string        flushDb()
- * @method array         info()
+ * @method array         info(string $section)
  * @method bool|array    config(string $setGet, string $key, string $value = null)
+ * @method array         role()
+ * @method array         time()
  *
  * Keys:
  * @method int           del(string $key)

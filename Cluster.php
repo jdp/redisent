@@ -10,6 +10,8 @@
 
 /**
  * A generalized Credis_Client interface for a cluster of Redis servers
+ *
+ * @deprecated
  */
 class Credis_Cluster
 {
@@ -73,6 +75,7 @@ class Credis_Cluster
    * @param array $servers The Redis servers in the cluster.
    * @param int $replicas
    * @param bool $standAlone
+   * @throws CredisException
    */
   public function __construct($servers, $replicas = 128, $standAlone = false)
   {
