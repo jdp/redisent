@@ -451,7 +451,7 @@ class Credis_Client {
             }
             $failures = $this->connectFailures;
             $this->connectFailures = 0;
-            throw new CredisException("Connection to Redis failed after $failures failures." . (isset($errno) && isset($errstr) ? "Last Error : ({$errno}) {$errstr}" : ""));
+            throw new CredisException("Connection to Redis {$this->host}:{$this->port} failed after $failures failures." . (isset($errno) && isset($errstr) ? "Last Error : ({$errno}) {$errstr}" : ""));
         }
 
         $this->connectFailures = 0;
