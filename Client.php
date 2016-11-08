@@ -425,10 +425,8 @@ class Credis_Client {
             $remote_socket = $this->port === NULL
                 ? 'unix://'.$this->host
                 : 'tcp://'.$this->host.':'.$this->port;
-            if ($this->persistent) {
-                if ($this->port === NULL) { // Unix socket
-                    throw new CredisException('Persistent connections to UNIX sockets are not supported in standalone mode.');
-                }
+            if ($this->persistent && $this->port !== NULL) {
+                // Persistent connections to UNIX sockets are not supported
                 $remote_socket .= '/'.$this->persistent;
                 $flags = $flags | STREAM_CLIENT_PERSISTENT;
             }
