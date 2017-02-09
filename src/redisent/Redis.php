@@ -54,11 +54,25 @@ class Redis {
 	 * @param float $timeout The connection timeout in seconds
 	 */
 	function __construct($dsn = 'redis://localhost:6379', $timeout = null) {
-		$this->dsn = parse_url($dsn);
-		$host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
-		$port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
-		$timeout = $timeout ?: ini_get("default_socket_timeout");
-		$this->__sock = @fsockopen($host, $port, $errno, $errstr, $timeout);
+       
+	       	$this->dsn = parse_url($dsn);
+	        $timeout = $timeout ?: ini_get("default_socket_timeout");
+	        if($this->dsn['scheme']=='redis'){
+	            $host = isset($this->dsn['host']) ? $this->dsn['host'] : 'localhost';
+	            $port = isset($this->dsn['port']) ? $this->dsn['port'] : 6379;
+	            $this->__sock = @fsockopen($host, $port, $errno, $errstr, $timeout);
+	        }
+	        elseif($dsn=='unix:///tmp/redis.sock'){
+	
+	            $this->__sock = @fsockopen('unix:///tmp/redis.sock', NULL, $errno, $errstr,$timeout);
+	        }
+	        else{
+	        	die('Wrong dsn for redis!');
+	        }
+	        
+
+		
+		
 		if ($this->__sock === FALSE) {
 			throw new \Exception("{$errno} - {$errstr}");
 		}
