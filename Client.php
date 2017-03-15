@@ -867,6 +867,12 @@ class Credis_Client {
                         $args[3] = $cArgs;
                     }
                     break;
+                case 'mget':
+                    if (isset($args[0]) && is_array($args[0])) 
+                    {
+                        $args = array_values($args[0]);
+                    }
+                    break;
             }
             // Flatten arguments
             $args = self::_flattenArguments($args);
