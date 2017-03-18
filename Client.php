@@ -436,10 +436,20 @@ class Credis_Client {
             if ( ! $this->redis) {
                 $this->redis = new Redis;
             }
-            $socketTimeout = $this->timeout ? $this->timeout : 0.0;
-            $result = $this->persistent
-                ? $this->redis->pconnect($this->host, $this->port, $socketTimeout, $this->persistent)
-                : $this->redis->connect($this->host, $this->port, $socketTimeout);
+            try
+            {
+                $socketTimeout = $this->timeout ? $this->timeout : 0.0;
+                $result = $this->persistent
+                    ? $this->redis->pconnect($this->host, $this->port, $socketTimeout, $this->persistent)
+                    : $this->redis->connect($this->host, $this->port, $socketTimeout);
+            }
+            catch(Exception $e)
+            {
+                // Some applications will capture the php error that phpredis can sometimes generate and throw it as an Exception
+                $result = false;
+                $errno = 1;
+                $errstr = $e->getMessage();
+            }
         }
 
         // Use recursion for connection retries
