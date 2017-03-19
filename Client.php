@@ -793,6 +793,19 @@ class Credis_Client {
                     $eArgs = (array) array_shift($args);
                     $args = array($script, count($keys), $keys, $eArgs);
                     break;
+                case 'zunionstore':
+                    $dest = array_shift($args);
+                    $keys = (array) array_shift($args);
+                    $weights = array_shift($args);
+                    $aggregate = array_shift($args);
+                    $args = array($dest, count($keys), $keys);
+                    if ($weights) {
+                        $args[] = (array) $weights;
+                    }
+                    if ($aggregate) {
+                        $args[] = $aggregate;
+                    }
+                    break;
                 case 'set':
                     // The php redis module has different behaviour with ttl
                     // https://github.com/phpredis/phpredis#set
@@ -1014,6 +1027,7 @@ class Credis_Client {
                 case 'zrevrangebyscore':
                 case 'zrange':
                 case 'zrevrange':
+                case 'zunionstore':
                     break;
                 case 'mget':
                     if(isset($args[0]) && ! is_array($args[0])) {
