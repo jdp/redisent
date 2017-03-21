@@ -533,7 +533,7 @@ class Credis_Client {
             } catch (Exception $e) {
                 ; // Ignore exceptions on close
             }
-            $this->connected = $this->usePipeline = $this->isMulti = FALSE;
+            $this->connected = $this->usePipeline = $this->isMulti = $this->isWatching = FALSE;
         }
         return $result;
     }
@@ -1177,7 +1177,6 @@ class Credis_Client {
     {
         // Reconnect on lost connection (Redis server "timeout" exceeded since last command)
         if(feof($this->redis)) {
-            $this->close();
             // If a watch or transaction was in progress and connection was lost, throw error rather than reconnect
             // since transaction/watch state will be lost.
             if(($this->isMulti && ! $this->usePipeline) || $this->isWatching) {
