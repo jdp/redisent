@@ -420,6 +420,8 @@ class Credis_Client {
         if ($this->connected) {
             return $this;
         }
+        $this->close(true);
+
         if ($this->standalone) {
             $flags = STREAM_CLIENT_CONNECT;
             $remote_socket = $this->port === NULL
@@ -517,16 +519,21 @@ class Credis_Client {
     /**
      * @return bool
      */
-    public function close()
+    public function close($force = FALSE)
     {
         $result = TRUE;
-        if ($this->connected && ! $this->persistent) {
+        if ($this->redis && ($force || $this->connected && ! $this->persistent)) {
             try {
-                $result = $this->standalone ? fclose($this->redis) : $this->redis->close();
-                $this->connected = FALSE;
+                if (is_callable(array($this->redis, 'close'))) {
+                    $this->redis->close();
+                } else {
+                    @fclose($this->redis);
+                    $this->redis = null;
+                }
             } catch (Exception $e) {
                 ; // Ignore exceptions on close
             }
+            $this->connected = $this->usePipeline = $this->isMulti = FALSE;
         }
         return $result;
     }
