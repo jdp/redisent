@@ -1027,7 +1027,20 @@ class Credis_Client {
                 case 'zrevrangebyscore':
                 case 'zrange':
                 case 'zrevrange':
+                   break;
                 case 'zunionstore':
+                    $cArgs = array();
+                    $cArgs[] = array_shift($args); // destination
+                    $cArgs[] = array_shift($args); // keys
+                    if(isset($args[0]) and isset($args[0]['weights'])) {
+                        $cArgs[] = (array) $args[0]['weights'];
+                    } else {
+                        $cArgs[] = null;
+                    }
+                    if(isset($args[0]) and isset($args[0]['aggregate'])) {
+                        $cArgs[] = strtoupper($args[0]['aggregate']);
+                    }
+                    $args = $cArgs;
                     break;
                 case 'mget':
                     if(isset($args[0]) && ! is_array($args[0])) {
