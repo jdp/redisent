@@ -1,5 +1,5 @@
 <?php
-class TearDownAfter extends \PHPUnit\Framework\TestCase
+class TearDownAfter extends PHPUnit_Framework_TestCase
 {
     public static function tearDownAfterClass()
     {

@@ -1,6 +1,5 @@
 <?php
-
-class SetUpBefore extends \PHPUnit\Framework\TestCase
+class SetUpBefore extends PHPUnit_Framework_TestCase
 {
     public static function setUpBeforeClass()
     {
