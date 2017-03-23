@@ -501,7 +501,7 @@ class Credis_Client {
             throw new CredisException('Timeout values less than -1 are not accepted.');
         }
         $this->readTimeout = $timeout;
-        if ($this->connected) {
+        if ($this->isConnected()) {
             if ($this->standalone) {
                 $timeout = $timeout <= 0 ? 315360000 : $timeout; // Ten-year timeout
                 stream_set_blocking($this->redis, TRUE);
@@ -1109,7 +1109,7 @@ class Credis_Client {
                     $response = call_user_func_array(array($this->redis, $name), $args);
                 } catch (RedisException $e) {
                     if ($this->persistent && $this->requests == 1 && $e->getMessage() == 'read error on connection') {
-                        $this->connected = FALSE;
+                        $this->close(true);
                         $this->connect();
                         $response = call_user_func_array(array($this->redis, $name), $args);
                     } else {
@@ -1121,7 +1121,7 @@ class Credis_Client {
             catch(RedisException $e) {
                 $code = 0;
                 if ( ! ($result = $this->redis->IsConnected())) {
-                    $this->connected = FALSE;
+                    $this->close(true);
                     $code = CredisException::CODE_DISCONNECTED;
                 }
                 throw new CredisException($e->getMessage(), $code, $e);
@@ -1183,7 +1183,7 @@ class Credis_Client {
                 $this->isMulti = $this->isWatching = FALSE;
                 throw new CredisException('Lost connection to Redis server during watch or transaction.');
             }
-            $this->connected = FALSE;
+            $this->close(true);
             $this->connect();
             if($this->authPassword) {
                 $this->auth($this->authPassword);
@@ -1198,7 +1198,7 @@ class Credis_Client {
         for ($written = 0; $written < $commandLen; $written += $fwrite) {
             $fwrite = fwrite($this->redis, substr($command, $written));
             if ($fwrite === FALSE || ($fwrite == 0 && $lastFailed)) {
-                $this->connected = FALSE;
+                $this->close(true);
                 throw new CredisException('Failed to write entire command to stream');
             }
             $lastFailed = $fwrite == 0;
@@ -1210,10 +1210,10 @@ class Credis_Client {
         $reply = fgets($this->redis);
         if($reply === FALSE) {
             $info = stream_get_meta_data($this->redis);
-            if ($info['timed_out']) {
+            if ($info['timed_out']) {                
                 throw new CredisException('Read operation timed out.', CredisException::CODE_TIMED_OUT);
             } else {
-                $this->connected = FALSE;
+                $this->close(true);
                 throw new CredisException('Lost connection to Redis server.', CredisException::CODE_DISCONNECTED);
             }
         }
@@ -1244,7 +1244,7 @@ class Credis_Client {
                 $size = (int) substr($reply, 1);
                 $response = stream_get_contents($this->redis, $size + 2);
                 if( ! $response) {
-                    $this->connected = FALSE;
+                    $this->close(true);
                     throw new CredisException('Error reading reply.');
                 }
                 $response = substr($response, 0, $size);
