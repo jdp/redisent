@@ -710,26 +710,12 @@ class Credis_Client {
                 throw new CredisException('Invalid pSubscribe response.');
             }
         }
-        try {
-            while ($this->subscribed) {
-                list($type, $pattern, $channel, $message) = $this->read_reply();
-                if ($type != 'pmessage') {
-                    throw new CredisException('Received non-pmessage reply.');
-                }
-                $callback($this, $pattern, $channel, $message);
+        while ($this->subscribed) {
+            list($type, $pattern, $channel, $message) = $this->read_reply();
+            if ($type != 'pmessage') {
+                throw new CredisException('Received non-pmessage reply.');
             }
-        } catch (CredisException $e) {
-            if ($e->getCode() == CredisException::CODE_TIMED_OUT) {
-                try {
-                    list($command, $pattern, $status) = $this->pUnsubscribe($patterns);
-                    while ($status !== 0) {
-                        list($command, $pattern, $status) = $this->read_reply();
-                    }
-                } catch (CredisException $e2) {
-                    throw $e2;
-                }
-            }
-            throw $e;
+            $callback($this, $pattern, $channel, $message);
         }
     }
 
@@ -769,26 +755,12 @@ class Credis_Client {
                 throw new CredisException('Invalid subscribe response.');
             }
         }
-        try {
-            while ($this->subscribed) {
-                list($type, $channel, $message) = $this->read_reply();
-                if ($type != 'message') {
-                    throw new CredisException('Received non-message reply.');
-                }
-                $callback($this, $channel, $message);
+        while ($this->subscribed) {
+            list($type, $channel, $message) = $this->read_reply();
+            if ($type != 'message') {
+                throw new CredisException('Received non-message reply.');
             }
-        } catch (CredisException $e) {
-            if ($e->getCode() == CredisException::CODE_TIMED_OUT) {
-                try {
-                    list($command, $channel, $status) = $this->unsubscribe($channels);
-                    while ($status !== 0) {
-                        list($command, $channel, $status) = $this->read_reply();
-                    }
-                } catch (CredisException $e2) {
-                    throw $e2;
-                }
-            }
-            throw $e;
+            $callback($this, $channel, $message);
         }
     }
 
@@ -1210,10 +1182,10 @@ class Credis_Client {
         $reply = fgets($this->redis);
         if($reply === FALSE) {
             $info = stream_get_meta_data($this->redis);
+            $this->close(true);
             if ($info['timed_out']) {                
                 throw new CredisException('Read operation timed out.', CredisException::CODE_TIMED_OUT);
             } else {
-                $this->close(true);
                 throw new CredisException('Lost connection to Redis server.', CredisException::CODE_DISCONNECTED);
             }
         }
