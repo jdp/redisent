@@ -74,6 +74,14 @@ class Credis_Sentinel
     }
 
     /**
+     * Clean up client on destruct
+     */
+    public function __destruct()
+    {
+        $this->_client->close();
+    }
+
+    /**
      * @param float $timeout
      * @return $this
      */
