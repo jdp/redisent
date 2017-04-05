@@ -860,7 +860,7 @@ class Credis_Client {
 					if (!empty($args[3]))
 					{
 						$eArgs[] = 'COUNT';
-						$eArgs[] = $args[4];
+						$eArgs[] = $args[3];
 					}
 					$args = $eArgs;
 					break;
