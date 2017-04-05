@@ -424,7 +424,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
   {
       $this->credis->hmset('hash',array('name' => 'Jack','age' =>33));
       $iterator = null;
-      $result = $this->credis->hscan($iterator,'hash','n*');
+      $result = $this->credis->hscan($iterator,'hash','n*',10);
       $this->assertEquals($iterator,0);
       $this->assertEquals($result,['name'=>'Jack']);
 	}
@@ -433,7 +433,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->credis->sadd('set','name','Jack');
         $this->credis->sadd('set','age','33');
         $iterator = null;
-        $result = $this->credis->sscan($iterator,'set','n*');
+        $result = $this->credis->sscan($iterator,'set','n*',10);
         $this->assertEquals($iterator,0);
         $this->assertEquals($result,[0=>'name']);
     }
@@ -442,7 +442,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->credis->zadd('sortedset',0,'name');
         $this->credis->zadd('sortedset',1,'age');
         $iterator = null;
-        $result = $this->credis->zscan($iterator,'sortedset','n*');
+        $result = $this->credis->zscan($iterator,'sortedset','n*',10);
         $this->assertEquals($iterator,0);
         $this->assertEquals($result,['name'=>'0']);
     }
@@ -451,7 +451,7 @@ class CredisTest extends PHPUnit_Framework_TestCase
         $this->credis->set('name','Jack');
         $this->credis->set('age','33');
         $iterator = null;
-        $result = $this->credis->scan($iterator,'n*');
+        $result = $this->credis->scan($iterator,'n*',10);
         $this->assertEquals($iterator,0);
         $this->assertEquals($result,['name']);
     }
