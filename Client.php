@@ -438,11 +438,12 @@ class Credis_Client {
             if ( ! $this->redis) {
                 $this->redis = new Redis;
             }
+            $socketTimeout = $this->timeout ? $this->timeout : 0.0;
             try
             {
                 $result = $this->persistent
-                    ? $this->redis->pconnect($this->host, $this->port, $this->timeout, $this->persistent)
-                    : $this->redis->connect($this->host, $this->port, $this->timeout);
+                    ? $this->redis->pconnect($this->host, $this->port, $socketTimeout, $this->persistent)
+                    : $this->redis->connect($this->host, $this->port, $socketTimeout);
             }
             catch(Exception $e)
             {
@@ -849,7 +850,7 @@ class Credis_Client {
 					if (!empty($args[3]))
 					{
 						$eArgs[] = 'COUNT';
-						$eArgs[] = $args[4];
+						$eArgs[] = $args[3];
 					}
 					$args = $eArgs;
 					break;
