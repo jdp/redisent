@@ -17,8 +17,8 @@
 		"classmap": [
 			"Client.php",
 			"Cluster.php",
-            "Sentinel.php",
-            "Module.php"
+			"Sentinel.php",
+			"Module.php"
 		]
 	}
 }
