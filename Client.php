@@ -897,6 +897,17 @@ class Credis_Client {
                         $args = array_values($args[0]);
                     }
                     break;
+                case 'hmset':
+                    if (isset($args[1]) && is_array($args[1]))
+                    {
+                        $cArgs = array();
+                        foreach($args[1] as $id => $value)
+                        {
+                            $cArgs[] = $id;
+                            $cArgs[] = $value;
+                        }
+                        $args[1] = $cArgs;
+                    }
             }
             // Flatten arguments
             $args = self::_flattenArguments($args);
