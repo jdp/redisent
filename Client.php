@@ -917,6 +917,7 @@ class Credis_Client {
                         }
                         $args[1] = $cArgs;
                     }
+                    break;
                 case 'zsize':
                     $name = 'zcard';
                     break;
