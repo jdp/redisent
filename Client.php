@@ -81,7 +81,7 @@ class CredisException extends Exception
  * @method array         mGet(array $keys)
  * @method bool          mSet(array $keysValues)
  * @method int           mSetNx(array $keysValues)
- * @method bool          set(string $key, string $value, [int|array $options = null])
+ * @method bool          set(string $key, string $value, int|array $options = null)
  * @method int           setBit(string $key, int $offset, int $value)
  * @method bool          setEx(string $key, int $seconds, string $value)
  * @method int           setNx(string $key, string $value)
