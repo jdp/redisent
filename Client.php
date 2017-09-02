@@ -81,7 +81,7 @@ class CredisException extends Exception
  * @method array         mGet(array $keys)
  * @method bool          mSet(array $keysValues)
  * @method int           mSetNx(array $keysValues)
- * @method bool          set(string $key, string $value)
+ * @method bool          set(string $key, string $value, int|array $options = null)
  * @method int           setBit(string $key, int $offset, int $value)
  * @method bool          setEx(string $key, int $seconds, string $value)
  * @method int           setNx(string $key, string $value)
@@ -138,12 +138,20 @@ class CredisException extends Exception
  * @method int           rPushX(string $key, mixed $value)
  *
  * Sorted Sets:
+ * @method int           zAdd(string $key, double $score, string $value)
  * @method int           zCard(string $key)
+ * @method int           zSize(string $key)
+ * @method int           zCount(string $key, mixed $start, mixed $stop)
+ * @method int           zIncrBy(string $key, double $value, string member)
  * @method array         zRangeByScore(string $key, mixed $start, mixed $stop, array $args = null)
  * @method array         zRevRangeByScore(string $key, mixed $start, mixed $stop, array $args = null)
  * @method int           zRemRangeByScore(string $key, mixed $start, mixed $stop)
  * @method array         zRange(string $key, mixed $start, mixed $stop, array $args = null)
  * @method array         zRevRange(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method int           zRank(string $key, string member)
+ * @method int           zRevRank(string $key, string member)
+ * @method int           zRem(string $key, string member)
+ * @method int           zDelete(string $key, string member)
  * TODO
  *
  * Pub/Sub
@@ -643,7 +651,7 @@ class Credis_Client {
      * @param int $Iterator
      * @param string $pattern
      * @param int $count
-     * @return bool | Array
+     * @return bool|array
      */    
     public function scan(&$Iterator, $pattern = null, $count = null)
     {
@@ -655,7 +663,7 @@ class Credis_Client {
 	 * @param string $field
 	 * @param string $pattern
 	 * @param int $count
-	 * @return bool | Array
+	 * @return bool|array
 	 */
 	public function hscan(&$Iterator, $field, $pattern = null, $count = null)
 	{
@@ -667,7 +675,7 @@ class Credis_Client {
      * @param string $field
      * @param string $pattern
      * @param int $Iterator
-     * @return bool | Array
+     * @return bool|array
      */    
     public function sscan(&$Iterator, $field, $pattern = null, $count = null)
     {
@@ -679,7 +687,7 @@ class Credis_Client {
      * @param string $field
      * @param string $pattern
      * @param int $Iterator
-     * @return bool | Array
+     * @return bool|array
      */    
     public function zscan(&$Iterator, $field, $pattern = null, $count = null)
     {
@@ -763,6 +771,7 @@ class Credis_Client {
             }
             $callback($this, $channel, $message);
         }
+        return null;
     }
 
     public function __call($name, $args)
@@ -875,6 +884,24 @@ class Credis_Client {
                     {
                         $args = array_values($args[0]);
                     }
+                    break;
+                case 'hmset':
+                    if (isset($args[1]) && is_array($args[1]))
+                    {
+                        $cArgs = array();
+                        foreach($args[1] as $id => $value)
+                        {
+                            $cArgs[] = $id;
+                            $cArgs[] = $value;
+                        }
+                        $args[1] = $cArgs;
+                    }
+                    break;
+                case 'zsize':
+                    $name = 'zcard';
+                    break;
+                case 'zdelete':
+                    $name = 'zrem';
                     break;
             }
             // Flatten arguments
