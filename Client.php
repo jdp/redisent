@@ -570,6 +570,7 @@ class Credis_Client {
 
     /**
      * @param $command
+     * @return string
      */
     public function getRenamedCommand($command)
     {
@@ -733,6 +734,7 @@ class Credis_Client {
             }
             throw $e;
         }
+        return null;
     }
 
     /**
