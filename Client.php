@@ -81,7 +81,7 @@ class CredisException extends Exception
  * @method array         mGet(array $keys)
  * @method bool          mSet(array $keysValues)
  * @method int           mSetNx(array $keysValues)
- * @method bool          set(string $key, string $value, [int|array $options = null])
+ * @method bool          set(string $key, string $value, int|array $options = null)
  * @method int           setBit(string $key, int $offset, int $value)
  * @method bool          setEx(string $key, int $seconds, string $value)
  * @method int           setNx(string $key, string $value)
@@ -138,12 +138,20 @@ class CredisException extends Exception
  * @method int           rPushX(string $key, mixed $value)
  *
  * Sorted Sets:
+ * @method int           zAdd(string $key, double $score, string $value)
  * @method int           zCard(string $key)
+ * @method int           zSize(string $key)
+ * @method int           zCount(string $key, mixed $start, mixed $stop)
+ * @method int           zIncrBy(string $key, double $value, string $member)
  * @method array         zRangeByScore(string $key, mixed $start, mixed $stop, array $args = null)
  * @method array         zRevRangeByScore(string $key, mixed $start, mixed $stop, array $args = null)
  * @method int           zRemRangeByScore(string $key, mixed $start, mixed $stop)
  * @method array         zRange(string $key, mixed $start, mixed $stop, array $args = null)
  * @method array         zRevRange(string $key, mixed $start, mixed $stop, array $args = null)
+ * @method int           zRank(string $key, string $member)
+ * @method int           zRevRank(string $key, string $member)
+ * @method int           zRem(string $key, string $member)
+ * @method int           zDelete(string $key, string $member)
  * TODO
  *
  * Pub/Sub
@@ -562,6 +570,7 @@ class Credis_Client {
 
     /**
      * @param $command
+     * @return string
      */
     public function getRenamedCommand($command)
     {
@@ -725,6 +734,7 @@ class Credis_Client {
             }
             throw $e;
         }
+        return null;
     }
 
     /**
@@ -909,6 +919,13 @@ class Credis_Client {
                         }
                         $args[1] = $cArgs;
                     }
+                    break;
+                case 'zsize':
+                    $name = 'zcard';
+                    break;
+                case 'zdelete':
+                    $name = 'zrem';
+                    break;
             }
             // Flatten arguments
             $args = self::_flattenArguments($args);
