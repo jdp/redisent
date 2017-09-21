@@ -14,7 +14,7 @@ services:
   - redis-server
 
 install:
-  - pecl install redis
+  - yes '' | pecl install -f redis
 
 script:
   - phpunit --testsuite Basic --exclude-group Auth,UnixSocket
