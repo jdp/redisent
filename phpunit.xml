@@ -1,15 +1,19 @@
 <?xml version="1.0"?>
 <phpunit colors="true" verbose="true">
     <testsuites>
-        <testsuite name="Cm_Cache_Backend_Redis testsuite">
-            <file>tests/SetUpBefore.php</file>
+        <testsuite name="Basic">
             <file>tests/CredisTest.php</file>
             <file>tests/CredisStandaloneTest.php</file>
+        </testsuite>
+        <testsuite name="Cluster">
+            <file>tests/SetUpBefore.php</file>
             <file>tests/CredisClusterTest.php</file>
             <file>tests/CredisStandaloneClusterTest.php</file>
+            <file>tests/TearDownAfter.php</file>
+        </testsuite>
+        <testsuite name="Sentinel">
             <file>tests/CredisSentinelTest.php</file>
             <file>tests/CredisStandaloneSentinelTest.php</file>
-            <file>tests/TearDownAfter.php</file>
         </testsuite>
     </testsuites>
     <logging>
