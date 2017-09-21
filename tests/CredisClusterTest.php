@@ -2,8 +2,9 @@
 
 require_once dirname(__FILE__).'/../Client.php';
 require_once dirname(__FILE__).'/../Cluster.php';
+require_once dirname(__FILE__).'/CredisTestCommon.php';
 
-class CredisClusterTest extends \PHPUnit\Framework\TestCase
+class CredisClusterTest extends CredisTestCommon
 {
 
   /** @var Credis_Cluster */

@@ -4,7 +4,7 @@ if (!class_exists('\PHPUnit\Framework\TestCase') && class_exists('\PHPUnit_Frame
     class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
 }
 
-class SetUpBefore extends \PHPUnit\Framework\TestCase
+class CredisTestCommon extends \PHPUnit\Framework\TestCase
 {
     public static function setUpBeforeClass()
     {
@@ -33,8 +33,32 @@ class SetUpBefore extends \PHPUnit\Framework\TestCase
             exec('redis-sentinel redis-sentinel.conf');
         }
     }
-    public function testFoo()
+
+    public static function tearDownAfterClass()
     {
-        $this->assertTrue(true);
+        if(preg_match('/^WIN/',strtoupper(PHP_OS))){
+            echo "Please kill all Redis instances manually:".PHP_EOL;
+        } else {
+            chdir(__DIR__);
+            $directoryIterator = new DirectoryIterator(__DIR__);
+            foreach($directoryIterator as $item){
+                if(!$item->isfile() || !preg_match('/^redis\-(.+)\.pid$/',$item->getFilename())){
+                    continue;
+                }
+                $pid = trim(file_get_contents($item->getFilename()));
+                if(function_exists('posix_kill')){
+                    posix_kill($pid,15);
+                } else {
+                    exec('kill '.$pid);
+                }
+            }
+            unlink('dump.rdb');
+            unlink('redis-master.conf');
+            unlink('redis-slave.conf');
+            unlink('redis-sentinel.conf');
+            rename('redis-master.conf.bak','redis-master.conf');
+            rename('redis-slave.conf.bak','redis-slave.conf');
+            rename('redis-sentinel.conf.bak','redis-sentinel.conf');
+        }
     }
 }

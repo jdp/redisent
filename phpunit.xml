@@ -6,10 +6,8 @@
             <file>tests/CredisStandaloneTest.php</file>
         </testsuite>
         <testsuite name="Cluster">
-            <file>tests/SetUpBefore.php</file>
             <file>tests/CredisClusterTest.php</file>
             <file>tests/CredisStandaloneClusterTest.php</file>
-            <file>tests/TearDownAfter.php</file>
         </testsuite>
         <testsuite name="Sentinel">
             <file>tests/CredisSentinelTest.php</file>
