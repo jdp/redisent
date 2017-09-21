@@ -1,0 +1,22 @@
+language: php
+
+php:
+  - 5.6
+  - 7.0
+  - 7.1
+  - 7.2
+
+matrix:
+  allow_failures:
+    - php: 7.0
+    - php: 7.1
+    - php: 7.2
+
+services:
+  - redis-server
+
+install:
+  - yes '' | pecl install -f redis
+
+script:
+  - phpunit --testsuite Basic --exclude-group Auth,UnixSocket

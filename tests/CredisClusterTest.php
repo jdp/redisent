@@ -87,7 +87,7 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
           $this->assertEquals($config['port'],$this->cluster->client($offset)->getPort());
       }
       $alias = "non-existent-alias";
-      $this->setExpectedException('CredisException',"Client $alias does not exist.");
+      $this->expectException('CredisException',"Client $alias does not exist.");
       $this->cluster->client($alias);
   }
   public function testMasterSlave()
@@ -198,7 +198,7 @@ class CredisClusterTest extends PHPUnit_Framework_TestCase
       $this->cluster = new Credis_Cluster(array($two,$three,$four),2,$this->useStandalone);
       $this->assertTrue($this->cluster->set('key','value'));
       $this->assertEquals('value',$this->cluster->get('key'));
-      $this->setExpectedException('CredisException','Server should either be an array or an instance of Credis_Client');
+      $this->expectException('CredisException','Server should either be an array or an instance of Credis_Client');
       new Credis_Cluster(array(new stdClass()),2,$this->useStandalone);
   }
   public function testSetMasterClient()
