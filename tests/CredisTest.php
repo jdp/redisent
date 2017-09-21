@@ -360,6 +360,9 @@ class CredisTest extends \PHPUnit\Framework\TestCase
 
   }
 
+  /**
+   * @group Auth
+   */
   public function testPassword()
   {
       $this->tearDown();
@@ -375,6 +378,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->assertTrue($this->credis->auth('thepassword'));
       $this->assertTrue($this->credis->set('key','value'));
   }
+
   public function testGettersAndSetters()
   {
       $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
@@ -403,6 +407,13 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port.'/abc123');
       $this->assertEquals('abc123',$this->credis->getPersistence());
+  }
+
+  /**
+   * @group UnixSocket
+   */
+  public function testConnectionStringsSocket()
+  {
       $this->credis = new Credis_Client(realpath(__DIR__).'/redis.sock',0,null,'persistent');
       $this->credis->connect();
       $this->credis->set('key','value');
