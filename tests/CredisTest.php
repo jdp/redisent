@@ -393,7 +393,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->assertEquals('persistenceId',$this->credis->getPersistence());
       $this->credis = new Credis_Client('localhost', 12345);
       $this->credis->setMaxConnectRetries(1);
-      $this->setExpectedException('CredisException','Connection to Redis localhost:12345 failed after 2 failures.');
+      $this->expectException('CredisException','Connection to Redis localhost:12345 failed after 2 failures.');
       $this->credis->connect();
   }
 
@@ -423,14 +423,14 @@ class CredisTest extends \PHPUnit\Framework\TestCase
   public function testInvalidTcpConnectionstring()
   {
       $this->credis->close();
-      $this->setExpectedException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
+      $this->expectException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':abc');
   }
 
   public function testInvalidUnixSocketConnectionstring()
   {
       $this->credis->close();
-      $this->setExpectedException('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
+      $this->expectException('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
       $this->credis = new Credis_Client('unix://path/to/redis.sock');
   }
 
@@ -438,7 +438,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
   {
       $this->credis->connect();
       if ( ! $this->useStandalone) {
-          $this->setExpectedException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
+          $this->expectException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
       }
       $this->credis->forceStandalone();
   }
