@@ -928,7 +928,10 @@ class Credis_Client {
                     $name = 'zrem';
                 case 'hmget':
                     // hmget needs to track the keys for rehydrating the results
-                    $trackedArgs = array_keys($args);
+                    if (isset($args[1]))
+                    {
+                        $trackedArgs = $args[1];
+                    }
                     break;
             }
             // Flatten arguments
@@ -955,7 +958,7 @@ class Credis_Client {
                     // Read response
                     $response = array();
                     foreach($this->commandNames as $command) {
-                        list($name, $arguments) = $command; 
+                        list($name, $arguments) = $command;
                         $response[] = $this->read_reply($name, $arguments);
                     }
                     $this->commandNames = NULL;
@@ -971,7 +974,7 @@ class Credis_Client {
                         $this->isMulti = TRUE;
                     }
                     array_unshift($args, $this->getRenamedCommand($name));
-                    $this->commandNames[] = array($name, $trackArgInPipeline);
+                    $this->commandNames[] = array($name, $trackedArgs);
                     $this->commands .= self::_prepare_command($args);
                     return $this;
                 }
