@@ -389,7 +389,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->assertEquals('persistenceId',$this->credis->getPersistence());
       $this->credis = new Credis_Client('localhost', 12345);
       $this->credis->setMaxConnectRetries(1);
-      $this->setExpectedException('CredisException','Connection to Redis failed after 2 failures.');
+      $this->setExpectedException('CredisException','Connection to Redis localhost:12345 failed after 2 failures.');
       $this->credis->connect();
   }
 
@@ -426,7 +426,9 @@ class CredisTest extends \PHPUnit\Framework\TestCase
   public function testForceStandAloneAfterEstablishedConnection()
   {
       $this->credis->connect();
-      $this->setExpectedException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
+      if ( ! $this->useStandalone) {
+          $this->setExpectedException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
+      }
       $this->credis->forceStandalone();
   }
   public function testHscan()
