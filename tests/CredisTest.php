@@ -305,7 +305,9 @@ class CredisTest extends CredisTestCommon
 
     public function testPubsub()
     {
-/*
+        if (!$this->useStandalone) {
+            return;
+        }
         $timeout = 2;
         $time = time();
         $this->credis->setReadTimeout($timeout);
@@ -346,7 +348,6 @@ class CredisTest extends CredisTestCommon
                 $this->assertEquals($e->getCode(), CredisException::CODE_DISCONNECTED);
             }
         }
-*/
     }
   public function testDb()
   {
