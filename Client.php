@@ -998,7 +998,7 @@ class Credis_Client {
             array_unshift($args, $this->getRenamedCommand($name));
             $command = self::_prepare_command($args);
             $this->write_command($command);
-            $response = $this->read_reply($name);
+            $response = $this->read_reply($name, $trackedArgs);
 
             switch($name)
             {
