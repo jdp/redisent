@@ -97,7 +97,14 @@ class CredisClusterTest extends \PHPUnit\Framework\TestCase
       $this->assertTrue($this->cluster->client('master')->set('key','value'));
       $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
       $this->assertEquals('value',$this->cluster->get('key'));
-      $this->assertFalse($this->cluster->client('slave')->set('key2','value'));
+      try
+      {
+          $this->cluster->client('slave')->set('key2', 'value');
+          $this->fail('Writing to readonly slave');
+      }
+      catch(CredisException $e)
+      {
+      }
 
       $this->tearDown();
       $writeOnlyConfig = $this->config[0];

@@ -57,6 +57,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
         } catch(CredisException $e) {
         }
         $this->credis->setReadTimeout(10);
+        $this->assertTrue(true);
     }
 
     public function testPHPRedisReadTimeout()
@@ -71,6 +72,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
             $this->fail('setReadTimeout should not accept values less than -1');
         } catch(CredisException $e) {
         }
+        $this->assertTrue(true);
     }
 
     public function testScalars()
@@ -299,6 +301,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
         } catch(CredisException $e) {
         }
     }
+
     public function testPubsub()
     {
         $timeout = 2;
@@ -352,7 +355,6 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->assertFalse($this->credis->get('database'));
       $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
       $this->assertEquals(1,$this->credis->get('database'));
-
   }
 
   /**
@@ -436,6 +438,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
           $this->expectException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
       }
       $this->credis->forceStandalone();
+      $this->assertTrue(true);
   }
   public function testHscan()
   {
