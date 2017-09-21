@@ -1279,7 +1279,7 @@ class Credis_Client {
                 } else if ($name == 'evalsha' && substr($reply,0,9) == '-NOSCRIPT') {
                     $response = NULL;
                 } else {
-                    throw new CredisException('ERR '.substr($reply,0,4) == '-ERR' ? substr($reply, 5) : substr($reply,1));
+                    throw new CredisException(substr($reply,0,4) == '-ERR' ? 'ERR '.substr($reply, 5) : substr($reply,1));
                 }
                 break;
             /* Inline reply */
