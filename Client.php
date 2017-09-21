@@ -1354,6 +1354,10 @@ class Credis_Client {
                 }
                 break;
             case 'hmget':
+                if (count($arguments) != count($response))
+                {
+                    throw new CredisException('hmget arguments and response do not match: '.print_r($arguments, TRUE). ' ' .print_r($response, TRUE));
+                }
                 // rehydrate results into key => value form
                 $response = array_combine($arguments, $response);
                 break;
