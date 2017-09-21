@@ -2,11 +2,6 @@
 
 require_once dirname(__FILE__).'/../Client.php';
 
-// backward compatibility (https://stackoverflow.com/a/42828632/187780)
-if (!class_exists('\PHPUnit\Framework\TestCase') && class_exists('\PHPUnit_Framework_TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
-}
-
 class CredisTest extends \PHPUnit\Framework\TestCase
 {
 
@@ -167,10 +162,10 @@ class CredisTest extends \PHPUnit\Framework\TestCase
         $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores'));
         $this->assertEquals(4, count($range));
         $this->assertEquals(range(0, 3), array_keys($range)); // expecting numeric array without scores
-        
+
         $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => false));
         $this->assertEquals(4, count($range));
-        $this->assertEquals(range(0, 3), array_keys($range)); 
+        $this->assertEquals(range(0, 3), array_keys($range));
 
         // testing zunionstore (intersection of sorted sets)
         $this->credis->zAdd('myset1', 10, 'key1');
