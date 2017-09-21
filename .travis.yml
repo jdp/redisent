@@ -17,4 +17,4 @@ install:
   - pecl install redis
 
 script:
-  - phpunit --testsuite basic
+  - phpunit --testsuite Basic --exclude-group Auth,UnixSocket
