@@ -185,7 +185,7 @@ class Credis_Client {
      * @var string
      */
     protected $host;
-    
+
     /**
      * Port on which the Redis server is running
      * @var integer
@@ -285,12 +285,12 @@ class Credis_Client {
      * @var int
      */
     protected $requests = 0;
-    
+
     /**
      * @var bool
      */
     protected $subscribed = false;
-    
+
 
     /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
@@ -321,7 +321,7 @@ class Credis_Client {
             $this->close();
         }
     }
-    
+
     /**
      * @return bool
      */
@@ -329,7 +329,7 @@ class Credis_Client {
     {
     	return $this->subscribed;
     }
-    
+
     /**
      * Return the host of the Redis instance
      * @return string
@@ -629,7 +629,7 @@ class Credis_Client {
         $this->selectedDb = (int) $index;
         return $response;
     }
-    
+
     /**
      * @param string|array $pattern
      * @return array
@@ -646,7 +646,7 @@ class Credis_Client {
      * @param string $pattern
      * @param int $count
      * @return bool|array
-     */    
+     */
     public function scan(&$Iterator, $pattern = null, $count = null)
     {
         return $this->__call('scan', array(&$Iterator, $pattern, $count));
@@ -663,26 +663,26 @@ class Credis_Client {
 	{
 		return $this->__call('hscan', array($field, &$Iterator, $pattern, $count));
 	}
-    
+
     /**
      * @param int $Iterator
      * @param string $field
      * @param string $pattern
      * @param int $Iterator
      * @return bool|array
-     */    
+     */
     public function sscan(&$Iterator, $field, $pattern = null, $count = null)
     {
         return $this->__call('sscan', array($field, &$Iterator, $pattern, $count));
     }
-    
+
     /**
      * @param int $Iterator
      * @param string $field
      * @param string $pattern
      * @param int $Iterator
      * @return bool|array
-     */    
+     */
     public function zscan(&$Iterator, $field, $pattern = null, $count = null)
     {
         return $this->__call('zscan', array($field, &$Iterator, $pattern, $count));
@@ -831,7 +831,7 @@ class Credis_Client {
                 case 'set':
                     // The php redis module has different behaviour with ttl
                     // https://github.com/phpredis/phpredis#set
-                    if (count($args) === 3 && is_int($args[2])) { 
+                    if (count($args) === 3 && is_int($args[2])) {
                         $args = array($args[0], $args[1], array('EX', $args[2]));
                     } elseif (count($args) === 3 && is_array($args[2])) {
                         $tmp_args = $args;
@@ -903,7 +903,7 @@ class Credis_Client {
                     }
                     break;
                 case 'mget':
-                    if (isset($args[0]) && is_array($args[0])) 
+                    if (isset($args[0]) && is_array($args[0]))
                     {
                         $args = array_values($args[0]);
                     }
@@ -1214,7 +1214,7 @@ class Credis_Client {
                     $error = $this->redis->getLastError();
                     $this->redis->clearLastError();
                     if ($error) {
-                        throw new CredisException($error);
+                        throw new CredisException(rtrim($error));
                     }
                     break;
             }
@@ -1279,7 +1279,7 @@ class Credis_Client {
                 } else if ($name == 'evalsha' && substr($reply,0,9) == '-NOSCRIPT') {
                     $response = NULL;
                 } else {
-                    throw new CredisException(substr($reply,0,4) == '-ERR' ? substr($reply, 5) : substr($reply,1));
+                    throw new CredisException('ERR '.substr($reply,0,4) == '-ERR' ? substr($reply, 5) : substr($reply,1));
                 }
                 break;
             /* Inline reply */
@@ -1387,7 +1387,7 @@ class Credis_Client {
             if (!is_int($key)) {
                 $out[] = $key;
             }
-            
+
             if (is_array($arg)) {
                 self::_flattenArguments($arg, $out);
             } else {

@@ -368,13 +368,44 @@ class CredisTest extends CredisTestCommon
       $this->tearDown();
       $this->assertObjectHasAttribute('password',$this->config[4]);
       $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,$this->config[4]->password);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertInstanceOf('Credis_Client',$this->credis->connect());
       $this->assertTrue($this->credis->set('key','value'));
       $this->credis->close();
       $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,'wrongpassword');
-      $this->credis->connect();
-      $this->assertFalse($this->credis->set('key','value'));
-      $this->assertFalse($this->credis->auth('anotherwrongpassword'));
+      try
+      {
+          $this->credis->connect();
+          $this->fail('connect should fail with wrong password');
+      }
+      catch(CredisException $e)
+      {
+          $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
+          $this->credis->close();
+      }
+      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
+      try
+      {
+          $this->credis->set('key', 'value');
+      }
+      catch(CredisException $e)
+      {
+          $this->assertStringStartsWith('NOAUTH Authentication required', $e->getMessage());
+
+      }
+      try
+      {
+          $this->credis->auth('anotherwrongpassword');
+      }
+      catch(CredisException $e)
+      {
+          $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
+      }
       $this->assertTrue($this->credis->auth('thepassword'));
       $this->assertTrue($this->credis->set('key','value'));
   }
