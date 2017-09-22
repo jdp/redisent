@@ -428,6 +428,8 @@ class Credis_Client {
         if ($this->connected) {
             return $this;
         }
+        $this->close(true);
+
         if ($this->standalone) {
             $flags = STREAM_CLIENT_CONNECT;
             $remote_socket = $this->port === NULL
@@ -444,9 +446,9 @@ class Credis_Client {
             if ( ! $this->redis) {
                 $this->redis = new Redis;
             }
+            $socketTimeout = $this->timeout ? $this->timeout : 0.0;
             try
             {
-                $socketTimeout = $this->timeout ? $this->timeout : 0.0;
                 $result = $this->persistent
                     ? $this->redis->pconnect($this->host, $this->port, $socketTimeout, $this->persistent)
                     : $this->redis->connect($this->host, $this->port, $socketTimeout);
@@ -508,7 +510,7 @@ class Credis_Client {
             throw new CredisException('Timeout values less than -1 are not accepted.');
         }
         $this->readTimeout = $timeout;
-        if ($this->connected) {
+        if ($this->isConnected()) {
             if ($this->standalone) {
                 $timeout = $timeout <= 0 ? 315360000 : $timeout; // Ten-year timeout
                 stream_set_blocking($this->redis, TRUE);
@@ -526,16 +528,21 @@ class Credis_Client {
     /**
      * @return bool
      */
-    public function close()
+    public function close($force = FALSE)
     {
         $result = TRUE;
-        if ($this->connected && ! $this->persistent) {
+        if ($this->redis && ($force || $this->connected && ! $this->persistent)) {
             try {
-                $result = $this->standalone ? fclose($this->redis) : $this->redis->close();
-                $this->connected = FALSE;
+                if (is_callable(array($this->redis, 'close'))) {
+                    $this->redis->close();
+                } else {
+                    @fclose($this->redis);
+                    $this->redis = null;
+                }
             } catch (Exception $e) {
                 ; // Ignore exceptions on close
             }
+            $this->connected = $this->usePipeline = $this->isMulti = $this->isWatching = FALSE;
         }
         return $result;
     }
@@ -713,26 +720,12 @@ class Credis_Client {
                 throw new CredisException('Invalid pSubscribe response.');
             }
         }
-        try {
-            while ($this->subscribed) {
-                list($type, $pattern, $channel, $message) = $this->read_reply();
-                if ($type != 'pmessage') {
-                    throw new CredisException('Received non-pmessage reply.');
-                }
-                $callback($this, $pattern, $channel, $message);
+        while ($this->subscribed) {
+            list($type, $pattern, $channel, $message) = $this->read_reply();
+            if ($type != 'pmessage') {
+                throw new CredisException('Received non-pmessage reply.');
             }
-        } catch (CredisException $e) {
-            if ($e->getCode() == CredisException::CODE_TIMED_OUT) {
-                try {
-                    list($command, $pattern, $status) = $this->pUnsubscribe($patterns);
-                    while ($status !== 0) {
-                        list($command, $pattern, $status) = $this->read_reply();
-                    }
-                } catch (CredisException $e2) {
-                    throw $e2;
-                }
-            }
-            throw $e;
+            $callback($this, $pattern, $channel, $message);
         }
         return null;
     }
@@ -773,26 +766,12 @@ class Credis_Client {
                 throw new CredisException('Invalid subscribe response.');
             }
         }
-        try {
-            while ($this->subscribed) {
-                list($type, $channel, $message) = $this->read_reply();
-                if ($type != 'message') {
-                    throw new CredisException('Received non-message reply.');
-                }
-                $callback($this, $channel, $message);
+        while ($this->subscribed) {
+            list($type, $channel, $message) = $this->read_reply();
+            if ($type != 'message') {
+                throw new CredisException('Received non-message reply.');
             }
-        } catch (CredisException $e) {
-            if ($e->getCode() == CredisException::CODE_TIMED_OUT) {
-                try {
-                    list($command, $channel, $status) = $this->unsubscribe($channels);
-                    while ($status !== 0) {
-                        list($command, $channel, $status) = $this->read_reply();
-                    }
-                } catch (CredisException $e2) {
-                    throw $e2;
-                }
-            }
-            throw $e;
+            $callback($this, $channel, $message);
         }
         return null;
     }
@@ -1167,7 +1146,7 @@ class Credis_Client {
                     $response = call_user_func_array(array($this->redis, $name), $args);
                 } catch (RedisException $e) {
                     if ($this->persistent && $this->requests == 1 && $e->getMessage() == 'read error on connection') {
-                        $this->connected = FALSE;
+                        $this->close(true);
                         $this->connect();
                         $response = call_user_func_array(array($this->redis, $name), $args);
                     } else {
@@ -1179,7 +1158,7 @@ class Credis_Client {
             catch(RedisException $e) {
                 $code = 0;
                 if ( ! ($result = $this->redis->IsConnected())) {
-                    $this->connected = FALSE;
+                    $this->close(true);
                     $code = CredisException::CODE_DISCONNECTED;
                 }
                 throw new CredisException($e->getMessage(), $code, $e);
@@ -1231,14 +1210,13 @@ class Credis_Client {
     {
         // Reconnect on lost connection (Redis server "timeout" exceeded since last command)
         if(feof($this->redis)) {
-            $this->close();
             // If a watch or transaction was in progress and connection was lost, throw error rather than reconnect
             // since transaction/watch state will be lost.
             if(($this->isMulti && ! $this->usePipeline) || $this->isWatching) {
                 $this->isMulti = $this->isWatching = FALSE;
                 throw new CredisException('Lost connection to Redis server during watch or transaction.');
             }
-            $this->connected = FALSE;
+            $this->close(true);
             $this->connect();
             if($this->authPassword) {
                 $this->auth($this->authPassword);
@@ -1253,7 +1231,7 @@ class Credis_Client {
         for ($written = 0; $written < $commandLen; $written += $fwrite) {
             $fwrite = fwrite($this->redis, substr($command, $written));
             if ($fwrite === FALSE || ($fwrite == 0 && $lastFailed)) {
-                $this->connected = FALSE;
+                $this->close(true);
                 throw new CredisException('Failed to write entire command to stream');
             }
             $lastFailed = $fwrite == 0;
@@ -1265,10 +1243,10 @@ class Credis_Client {
         $reply = fgets($this->redis);
         if($reply === FALSE) {
             $info = stream_get_meta_data($this->redis);
-            if ($info['timed_out']) {
+            $this->close(true);
+            if ($info['timed_out']) {                
                 throw new CredisException('Read operation timed out.', CredisException::CODE_TIMED_OUT);
             } else {
-                $this->connected = FALSE;
                 throw new CredisException('Lost connection to Redis server.', CredisException::CODE_DISCONNECTED);
             }
         }
@@ -1299,7 +1277,7 @@ class Credis_Client {
                 $size = (int) substr($reply, 1);
                 $response = stream_get_contents($this->redis, $size + 2);
                 if( ! $response) {
-                    $this->connected = FALSE;
+                    $this->close(true);
                     throw new CredisException('Error reading reply.');
                 }
                 $response = substr($response, 0, $size);
