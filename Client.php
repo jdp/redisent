@@ -807,6 +807,7 @@ class Credis_Client {
         // Send request via native PHP
         if($this->standalone)
         {
+            $trackedArgs = array();
             switch ($name) {
                 case 'eval':
                 case 'evalsha':
@@ -925,6 +926,12 @@ class Credis_Client {
                     break;
                 case 'zdelete':
                     $name = 'zrem';
+                case 'hmget':
+                    // hmget needs to track the keys for rehydrating the results
+                    if (isset($args[1]))
+                    {
+                        $trackedArgs = $args[1];
+                    }
                     break;
             }
             // Flatten arguments
@@ -938,7 +945,7 @@ class Credis_Client {
                 }
                 else if($name == 'exec') {
                     if($this->isMulti) {
-                        $this->commandNames[] = $name;
+                        $this->commandNames[] = array($name, $trackedArgs);
                         $this->commands .= self::_prepare_command(array($this->getRenamedCommand($name)));
                     }
 
@@ -951,7 +958,8 @@ class Credis_Client {
                     // Read response
                     $response = array();
                     foreach($this->commandNames as $command) {
-                        $response[] = $this->read_reply($command);
+                        list($name, $arguments) = $command;
+                        $response[] = $this->read_reply($name, $arguments);
                     }
                     $this->commandNames = NULL;
 
@@ -966,7 +974,7 @@ class Credis_Client {
                         $this->isMulti = TRUE;
                     }
                     array_unshift($args, $this->getRenamedCommand($name));
-                    $this->commandNames[] = $name;
+                    $this->commandNames[] = array($name, $trackedArgs);
                     $this->commands .= self::_prepare_command($args);
                     return $this;
                 }
@@ -990,7 +998,7 @@ class Credis_Client {
             array_unshift($args, $this->getRenamedCommand($name));
             $command = self::_prepare_command($args);
             $this->write_command($command);
-            $response = $this->read_reply($name);
+            $response = $this->read_reply($name, $trackedArgs);
 
             switch($name)
             {
@@ -1182,10 +1190,6 @@ class Credis_Client {
             // change return values where it is too difficult to minim in standalone mode
             switch($name)
             {
-                case 'hmget':
-                    $response = array_values($response);
-                    break;
-
                 case 'type':
                     $typeMap = array(
                       self::TYPE_NONE,
@@ -1256,7 +1260,7 @@ class Credis_Client {
         }
     }
 
-    protected function read_reply($name = '')
+    protected function read_reply($name = '', $arguments = array())
     {
         $reply = fgets($this->redis);
         if($reply === FALSE) {
@@ -1348,6 +1352,14 @@ class Credis_Client {
                 if($response === -1) {
                     $response = FALSE;
                 }
+                break;
+            case 'hmget':
+                if (count($arguments) != count($response))
+                {
+                    throw new CredisException('hmget arguments and response do not match: '.print_r($arguments, TRUE). ' ' .print_r($response, TRUE));
+                }
+                // rehydrate results into key => value form
+                $response = array_combine($arguments, $response);
                 break;
         }
 

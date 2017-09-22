@@ -34,7 +34,7 @@ class CredisStandaloneTest extends CredisTest
     public function testStandAloneArgumentsExtra()
     {
         $this->assertTrue($this->credis->hMSet('hash', array('field1' => 'value1', 'field2' => 'value2'), 'field3', 'value3'));
-        $this->assertEquals(array('value1','value2','value3'), $this->credis->hMGet('hash', array('field1','field2','field3')));
+        $this->assertEquals(array('field1' => 'value1', 'field2' => 'value2', 'field3' =>'value3'), $this->credis->hMGet('hash', array('field1','field2','field3')));
     }
 
     public function testStandAloneMultiPipelineThrowsException()

@@ -211,7 +211,7 @@ class CredisTest extends CredisTestCommon
         $this->assertEquals('foo', $this->credis->hGet('hash','field1'));
         $this->assertEquals(NULL, $this->credis->hGet('hash','x'));
         $this->assertTrue($this->credis->hMSet('hash', array('field2' => 'Hello', 'field3' => 'World')));
-        $this->assertEquals(array('foo','Hello',FALSE), $this->credis->hMGet('hash', array('field1','field2','nilfield')));
+        $this->assertEquals(array('field1' => 'foo', 'field2' => 'Hello', 'nilfield' => FALSE), $this->credis->hMGet('hash', array('field1','field2','nilfield')));
         $this->assertEquals(array(), $this->credis->hGetAll('nohash'));
         $this->assertEquals(array('field1' => 'foo', 'field2' => 'Hello', 'field3' => 'World'), $this->credis->hGetAll('hash'));
 
