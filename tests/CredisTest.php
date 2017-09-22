@@ -1,13 +1,9 @@
 <?php
 
 require_once dirname(__FILE__).'/../Client.php';
+require_once dirname(__FILE__).'/CredisTestCommon.php';
 
-// backward compatibility (https://stackoverflow.com/a/42828632/187780)
-if (!class_exists('\PHPUnit\Framework\TestCase') && class_exists('\PHPUnit_Framework_TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
-}
-
-class CredisTest extends \PHPUnit\Framework\TestCase
+class CredisTest extends CredisTestCommon
 {
 
     /** @var Credis_Client */
@@ -62,6 +58,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
         } catch(CredisException $e) {
         }
         $this->credis->setReadTimeout(10);
+        $this->assertTrue(true);
     }
 
     public function testPHPRedisReadTimeout()
@@ -76,6 +73,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
             $this->fail('setReadTimeout should not accept values less than -1');
         } catch(CredisException $e) {
         }
+        $this->assertTrue(true);
     }
 
     public function testScalars()
@@ -167,10 +165,10 @@ class CredisTest extends \PHPUnit\Framework\TestCase
         $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores'));
         $this->assertEquals(4, count($range));
         $this->assertEquals(range(0, 3), array_keys($range)); // expecting numeric array without scores
-        
+
         $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => false));
         $this->assertEquals(4, count($range));
-        $this->assertEquals(range(0, 3), array_keys($range)); 
+        $this->assertEquals(range(0, 3), array_keys($range));
 
         // testing zunionstore (intersection of sorted sets)
         $this->credis->zAdd('myset1', 10, 'key1');
@@ -304,8 +302,12 @@ class CredisTest extends \PHPUnit\Framework\TestCase
         } catch(CredisException $e) {
         }
     }
+
     public function testPubsub()
     {
+        if (!$this->useStandalone) {
+            return;
+        }
         $timeout = 2;
         $time = time();
         $this->credis->setReadTimeout($timeout);
@@ -351,13 +353,21 @@ class CredisTest extends \PHPUnit\Framework\TestCase
   {
       $this->tearDown();
       $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertTrue($this->credis->set('database',1));
       $this->credis->close();
       $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,0);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertFalse($this->credis->get('database'));
       $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertEquals(1,$this->credis->get('database'));
-
   }
 
   /**
@@ -368,13 +378,47 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->tearDown();
       $this->assertObjectHasAttribute('password',$this->config[4]);
       $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,$this->config[4]->password);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertInstanceOf('Credis_Client',$this->credis->connect());
       $this->assertTrue($this->credis->set('key','value'));
       $this->credis->close();
       $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,'wrongpassword');
-      $this->credis->connect();
-      $this->assertFalse($this->credis->set('key','value'));
-      $this->assertFalse($this->credis->auth('anotherwrongpassword'));
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
+      try
+      {
+          $this->credis->connect();
+          $this->fail('connect should fail with wrong password');
+      }
+      catch(CredisException $e)
+      {
+          $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
+          $this->credis->close();
+      }
+      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
+      try
+      {
+          $this->credis->set('key', 'value');
+      }
+      catch(CredisException $e)
+      {
+          $this->assertStringStartsWith('NOAUTH Authentication required', $e->getMessage());
+
+      }
+      try
+      {
+          $this->credis->auth('anotherwrongpassword');
+      }
+      catch(CredisException $e)
+      {
+          $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
+      }
       $this->assertTrue($this->credis->auth('thepassword'));
       $this->assertTrue($this->credis->set('key','value'));
   }
@@ -390,8 +434,14 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->credis->close();
       $this->assertFalse($this->credis->isConnected());
       $this->credis = new Credis_Client($this->config[0]->host,$this->config[0]->port,null,'persistenceId');
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertEquals('persistenceId',$this->credis->getPersistence());
       $this->credis = new Credis_Client('localhost', 12345);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->credis->setMaxConnectRetries(1);
       $this->expectException('CredisException','Connection to Redis localhost:12345 failed after 2 failures.');
       $this->credis->connect();
@@ -401,11 +451,20 @@ class CredisTest extends \PHPUnit\Framework\TestCase
   {
       $this->credis->close();
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
       $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host);
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port.'/abc123');
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->assertEquals('abc123',$this->credis->getPersistence());
   }
 
@@ -415,6 +474,9 @@ class CredisTest extends \PHPUnit\Framework\TestCase
   public function testConnectionStringsSocket()
   {
       $this->credis = new Credis_Client(realpath(__DIR__).'/redis.sock',0,null,'persistent');
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
       $this->credis->connect();
       $this->credis->set('key','value');
       $this->assertEquals('value',$this->credis->get('key'));
@@ -425,6 +487,9 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->credis->close();
       $this->expectException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
       $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':abc');
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
   }
 
   public function testInvalidUnixSocketConnectionstring()
@@ -432,6 +497,9 @@ class CredisTest extends \PHPUnit\Framework\TestCase
       $this->credis->close();
       $this->expectException('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
       $this->credis = new Credis_Client('unix://path/to/redis.sock');
+      if ($this->useStandalone) {
+          $this->credis->forceStandalone();
+      }
   }
 
   public function testForceStandAloneAfterEstablishedConnection()
@@ -441,6 +509,7 @@ class CredisTest extends \PHPUnit\Framework\TestCase
           $this->expectException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
       }
       $this->credis->forceStandalone();
+      $this->assertTrue(true);
   }
   public function testHscan()
   {
