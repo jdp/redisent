@@ -1,11 +1,97 @@
 <?php
 // backward compatibility (https://stackoverflow.com/a/42828632/187780)
 if (!class_exists('\PHPUnit\Framework\TestCase') && class_exists('\PHPUnit_Framework_TestCase')) {
-    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
+    //class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
 }
 
 class CredisTestCommon extends \PHPUnit\Framework\TestCase
 {
+    protected $useStandalone = false;
+    protected $redisConfig = null;
+    protected $slaveConfig = null;
+
+    protected function setUp()
+    {
+        if ($this->redisConfig === null)
+        {
+            $configFile = dirname(__FILE__) . '/redis_config.json';
+            if (!file_exists($configFile) || !($config = file_get_contents($configFile)))
+            {
+                $this->markTestSkipped('Could not load ' . $configFile);
+
+                return;
+            }
+            $this->redisConfig = json_decode($config);
+            $arrayConfig = array();
+            foreach ($this->redisConfig as $config)
+            {
+                $arrayConfig[] = (array)$config;
+            }
+            $this->redisConfig = $arrayConfig;
+        }
+
+        if($this->useStandalone && !extension_loaded('redis')) {
+            $this->fail('The Redis extension is not loaded.');
+        }
+    }
+
+    /**
+     * Verifies the slave has connected to the master and replication has caught up
+     *
+     * @return bool
+     */
+    protected function waitForSlaveReplication()
+    {
+        if ($this->slaveConfig === null)
+        {
+            foreach ($this->redisConfig as $config)
+            {
+                if ($config['alias'] === 'slave')
+                {
+                    $this->slaveConfig = $config;
+                    break;
+                }
+            }
+            if ($this->slaveConfig === null)
+            {
+                $this->markTestSkipped('Could not load slave config');
+
+                return false;
+            }
+        }
+        $masterConfig = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port']);
+        $masterConfig->forceStandalone();
+
+        $slaveConfig = new Credis_Client($this->slaveConfig['host'], $this->slaveConfig['port']);
+        $slaveConfig->forceStandalone();
+
+        while (true)
+        {
+            $role = $slaveConfig->role();
+            if ($role[0] !== 'slave')
+            {
+                $this->markTestSkipped('slave config does not points to a slave');
+                return false;
+            }
+            if ($role[3] === 'connected')
+            {
+                $masterRole = $masterConfig->role();
+                if ($masterRole[0] !== 'master')
+                {
+                    $this->markTestSkipped('master config does not points to a master');
+                    return false;
+                }
+                if ($role[4] >= $masterRole[1])
+                {
+                    return true;
+                }
+            }
+            usleep(100);
+        }
+        // shouldn't get here
+        return false;
+    }
+
     public static function setUpBeforeClass()
     {
         if(preg_match('/^WIN/',strtoupper(PHP_OS))){
@@ -31,6 +117,8 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             copy('redis-slave.conf','redis-slave.conf.bak');
             copy('redis-sentinel.conf','redis-sentinel.conf.bak');
             exec('redis-sentinel redis-sentinel.conf');
+            // wait for redis to initialize
+            usleep(200);
         }
     }
 
@@ -52,13 +140,14 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
                     exec('kill '.$pid);
                 }
             }
-            unlink('dump.rdb');
-            unlink('redis-master.conf');
-            unlink('redis-slave.conf');
-            unlink('redis-sentinel.conf');
-            rename('redis-master.conf.bak','redis-master.conf');
-            rename('redis-slave.conf.bak','redis-slave.conf');
-            rename('redis-sentinel.conf.bak','redis-sentinel.conf');
+            sleep(1); // give teardown some time to finish
+            @unlink('dump.rdb');
+            @unlink('redis-master.conf');
+            @unlink('redis-slave.conf');
+            @unlink('redis-sentinel.conf');
+            @copy('redis-master.conf.bak','redis-master.conf');
+            @copy('redis-slave.conf.bak','redis-slave.conf');
+            @copy('redis-sentinel.conf.bak','redis-sentinel.conf');
         }
     }
 }

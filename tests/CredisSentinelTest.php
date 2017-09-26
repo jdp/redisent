@@ -7,17 +7,14 @@ require_once dirname(__FILE__).'/CredisTestCommon.php';
 
 class CredisSentinelTest extends CredisTestCommon
 {
-
   /** @var Credis_Sentinel */
   protected $sentinel;
 
   protected $sentinelConfig;
-  protected $redisConfig;
-
-  protected $useStandalone = FALSE;
 
   protected function setUp()
   {
+    parent::setUp();
     if($this->sentinelConfig === NULL) {
       $configFile = dirname(__FILE__).'/sentinel_config.json';
       if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
@@ -27,26 +24,12 @@ class CredisSentinelTest extends CredisTestCommon
       $this->sentinelConfig = json_decode($config);
     }
 
-    if($this->redisConfig === NULL) {
-        $configFile = dirname(__FILE__).'/redis_config.json';
-        if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
-            $this->markTestSkipped('Could not load '.$configFile);
-            return;
-        }
-        $this->redisConfig = json_decode($config);
-        $arrayConfig = array();
-        foreach($this->redisConfig as $config) {
-            $arrayConfig[] = (array)$config;
-        }
-        $this->redisConfig = $arrayConfig;
-    }
     $sentinelClient = new Credis_Client($this->sentinelConfig->host, $this->sentinelConfig->port);
     $this->sentinel = new Credis_Sentinel($sentinelClient);
     if($this->useStandalone) {
       $this->sentinel->forceStandalone();
-    } else if ( ! extension_loaded('redis')) {
-      $this->fail('The Redis extension is not loaded.');
     }
+    $this->waitForSlaveReplication();
   }
   protected function tearDown()
   {
@@ -172,7 +155,7 @@ class CredisSentinelTest extends CredisTestCommon
       $host = 'localhost';
       $port = '123456';
 
-      $client = $this->getMock('\Credis_Client');
+      $client = $this->createMock('\Credis_Client');
       $sentinel = new Credis_Sentinel($client);
 
       $client->expects($this->once())->method('getHost')->willReturn($host);

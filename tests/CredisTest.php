@@ -5,33 +5,15 @@ require_once dirname(__FILE__).'/CredisTestCommon.php';
 
 class CredisTest extends CredisTestCommon
 {
-
     /** @var Credis_Client */
     protected $credis;
 
-    protected $config;
-
-    protected $useStandalone = FALSE;
-
     protected function setUp()
     {
-        if($this->config === NULL) {
-            $configFile = dirname(__FILE__).'/redis_config.json';
-            if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
-                $this->markTestSkipped('Could not load '.$configFile);
-                return;
-            }
-            $this->config = json_decode($config);
-            if(count($this->config) < 6) {
-              $this->markTestSkipped('Config file '.$configFile.' should contain at least 6 entries');
-              return;
-            }
-        }
-        $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout);
+        parent::setUp();
+        $this->credis = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port'], $this->redisConfig[0]['timeout']);
         if($this->useStandalone) {
             $this->credis->forceStandalone();
-        } else if ( ! extension_loaded('redis')) {
-            $this->fail('The Redis extension is not loaded.');
         }
         $this->credis->flushDb();
     }
@@ -139,6 +121,49 @@ class CredisTest extends CredisTestCommon
         $this->assertEquals(1, $this->credis->zAdd('myset', 10, 'And'));
         $this->assertEquals(1, $this->credis->zAdd('myset', 11, 'Goodbye'));
 
+        $this->assertEquals(4, count($this->credis->zRange('myset', 0, 4)));
+        $this->assertEquals(2, count($this->credis->zRange('myset', 0, 1)));
+
+        $range = $this->credis->zRange('myset', 1, 2);
+        $this->assertEquals(2, count($range));
+        $this->assertEquals('World', $range[0]);
+        $this->assertEquals('And', $range[1]);
+
+        $range = $this->credis->zRange('myset', 1, 2, array('withscores' => true));
+        $this->assertEquals(2, count($range));
+        $this->assertTrue(array_key_exists('World', $range));
+        $this->assertEquals(2.123, $range['World']);
+        $this->assertTrue(array_key_exists('And', $range));
+        $this->assertEquals(10, $range['And']);
+
+        // withscores-option is off
+        $range = $this->credis->zRange('myset', 0, 4, array('withscores'));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range)); // expecting numeric array without scores
+
+        $range = $this->credis->zRange('myset', 0, 4, array('withscores' => false));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range));
+
+        $this->assertEquals(4, count($this->credis->zRevRange('myset', 0, 4)));
+        $this->assertEquals(2, count($this->credis->zRevRange('myset', 0, 1)));
+
+        $range = $this->credis->zRevRange('myset', 0, 1, array('withscores' => true));
+        $this->assertEquals(2, count($range));
+        $this->assertTrue(array_key_exists('And', $range));
+        $this->assertEquals(10, $range['And']);
+        $this->assertTrue(array_key_exists('Goodbye', $range));
+        $this->assertEquals(11, $range['Goodbye']);
+
+        // withscores-option is off
+        $range = $this->credis->zRevRange('myset', 0, 4, array('withscores'));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range)); // expecting numeric array without scores
+
+        $range = $this->credis->zRevRange('myset', 0, 4, array('withscores' => false));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range));
+
         $this->assertEquals(4, count($this->credis->zRangeByScore('myset', '-inf', '+inf')));
         $this->assertEquals(2, count($this->credis->zRangeByScore('myset', '1', '9')));
 
@@ -169,6 +194,38 @@ class CredisTest extends CredisTestCommon
         $range = $this->credis->zRangeByScore('myset', '-inf', '+inf', array('withscores' => false));
         $this->assertEquals(4, count($range));
         $this->assertEquals(range(0, 3), array_keys($range));
+
+        $this->assertEquals(4, count($this->credis->zRevRangeByScore('myset', '+inf', '-inf')));
+        $this->assertEquals(2, count($this->credis->zRevRangeByScore('myset', '9', '1')));
+
+        $range = $this->credis->zRevRangeByScore('myset', '+inf', '-inf', array('limit' => array(1, 2)));
+        $this->assertEquals(2, count($range));
+        $this->assertEquals('World', $range[1]);
+        $this->assertEquals('And', $range[0]);
+
+        $range = $this->credis->zRevRangeByScore('myset', '+inf', '-inf', array('withscores' => true, 'limit' => array(1, 2)));
+        $this->assertEquals(2, count($range));
+        $this->assertTrue(array_key_exists('World', $range));
+        $this->assertEquals(2.123, $range['World']);
+        $this->assertTrue(array_key_exists('And', $range));
+        $this->assertEquals(10, $range['And']);
+
+        $range = $this->credis->zRevRangeByScore('myset', '+inf',10, array('withscores' => true));
+        $this->assertEquals(2, count($range));
+        $this->assertTrue(array_key_exists('And', $range));
+        $this->assertEquals(10, $range['And']);
+        $this->assertTrue(array_key_exists('Goodbye', $range));
+        $this->assertEquals(11, $range['Goodbye']);
+
+        // withscores-option is off
+        $range = $this->credis->zRevRangeByScore('myset', '+inf', '-inf', array('withscores'));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range)); // expecting numeric array without scores
+
+        $range = $this->credis->zRevRangeByScore('myset', '+inf', '-inf', array('withscores' => false));
+        $this->assertEquals(4, count($range));
+        $this->assertEquals(range(0, 3), array_keys($range));
+
 
         // testing zunionstore (intersection of sorted sets)
         $this->credis->zAdd('myset1', 10, 'key1');
@@ -223,6 +280,17 @@ class CredisTest extends CredisTestCommon
         $longString = str_repeat(md5('asd'), 4096); // 128k (redis.h REDIS_INLINE_MAX_SIZE = 64k)
         $this->assertEquals(1, $this->credis->hMSet('long_hash', array('count' => 1, 'data' => $longString)), 'Set long hash value');
         $this->assertEquals($longString, $this->credis->hGet('long_hash', 'data'), 'Get long hash value');
+
+        // in piplining mode
+        $this->assertTrue($this->credis->hMSet('hash', array('field1' => 'foo', 'field2' => 'Hello')));
+
+        $this->credis->pipeline();
+        $this->assertTrue($this->credis === $this->credis->hMGet('hash', array('field1','field2','nilfield')));
+        $this->assertEquals(array(0 => array('field1' => 'foo', 'field2' => 'Hello', 'nilfield' => FALSE)), $this->credis->exec());
+
+        $this->credis->pipeline()->multi();
+        $this->assertTrue($this->credis === $this->credis->hMGet('hash', array('field1','field2','nilfield')));
+        $this->assertEquals(array(0 => array('field1' => 'foo', 'field2' => 'Hello', 'nilfield' => FALSE)), $this->credis->exec());
     }
 
     public function testFalsey()
@@ -232,22 +300,129 @@ class CredisTest extends CredisTestCommon
 
     public function testPipeline()
     {
-        $longString = str_repeat(md5('asd')."\r\n", 500);
-        $reply = $this->credis->pipeline()
-                ->set('a', 123)
-                ->get('a')
-                ->sAdd('b', 123)
-                ->sMembers('b')
-                ->set('empty','')
-                ->get('empty')
-                ->set('big', $longString)
-                ->get('big')
-                ->exec();
-        $this->assertEquals(array(
-            TRUE, 123, 1, array(123), TRUE, '', TRUE, $longString
-        ), $reply);
+        $config = $this->credis->config('GET', '*');
+        $this->assertEquals($config, $this->credis->pipeline()->config('GET', '*')->exec()[0]);
 
+        $this->credis->pipeline();
+        $this->pipelineTestInternal();
         $this->assertEquals(array(), $this->credis->pipeline()->exec());
+    }
+
+    public function testPipelineMulti()
+    {
+        $config = $this->credis->config('GET', '*');
+        $this->assertEquals($config, $this->credis->pipeline()->multi()->config('GET', '*')->exec()[0]);
+
+        $this->credis->pipeline()->multi();
+        $this->pipelineTestInternal();
+        $this->assertEquals(array(), $this->credis->pipeline()->multi()->exec());
+    }
+
+    public function testWatchMultiUnwatch()
+    {
+        $this->assertTrue($this->credis->watch('foo', 'bar'));
+
+        $reply = $this->credis->pipeline()
+                              ->multi()
+                              ->set('foo', 1)
+                              ->set('bar', 1)
+                              ->exec();
+        $this->assertEquals(
+            array(
+                true,
+                true,
+            ), $reply
+        );
+        $this->assertTrue($this->credis->unwatch());
+    }
+
+    protected function pipelineTestInternal()
+    {
+        $longString = str_repeat(md5('asd') . "\r\n", 500);
+        $reply = $this->credis
+            ->set('a', 123)
+            ->get('a')
+            ->sAdd('b', 123)
+            ->sMembers('b')
+            ->set('empty', '')
+            ->get('empty')
+            ->set('big', $longString)
+            ->get('big')
+            ->hset('hash', 'field1', 1)
+            ->hset('hash', 'field2', 2)
+            ->hgetall('hash')
+            ->hmget('hash', array('field1', 'field3'))
+            ->zadd('sortedSet', 1, 'member1')
+            ->zadd('sortedSet', 2, 'member2')
+            ->zadd('sortedSet', 3, 'member3')
+            ->zcard('sortedSet')
+            ->zrangebyscore('sortedSet', 1, 2)
+            ->zrangebyscore('sortedSet', 1, 2, array('withscores' => true))
+            ->zrevrangebyscore('sortedSet', 2, 1)
+            ->zrevrangebyscore('sortedSet', 2, 1, array('withscores' => true))
+            ->zrange('sortedSet', 0, 1)
+            ->zrange('sortedSet', 0, 1, array('withscores' => true))
+            ->zrevrange('sortedSet', 0, 1)
+            ->zrevrange('sortedSet', 0, 1, array('withscores' => true))
+            ->exec();
+        $this->assertEquals(
+            array(
+                true,               // set('a', 123)
+                '123',              // get('a')
+                1,                  // sAdd('b', 123)
+                array(123),         // sMembers('b')
+                true,               // set('empty', '')
+                '',                 // get('empty')
+                true,               // set('big', $longString)
+                $longString,        // get('big')
+                1,                  // hset('hash', 'field1', 1)
+                1,                  // hset('hash', 'field2', 2)
+                array(              // hgetall('hash')
+                    'field1' => 1,
+                    'field2' => 2,
+                ),
+                array(              // hmget('hash', array('field1', 'field3'))
+                    'field1' => 1,
+                    'field3' => false,
+                ),
+                1,                  // zadd('sortedSet', 1, 'member1')
+                1,                  // zadd('sortedSet', 2, 'member2')
+                1,                  // zadd('sortedSet', 3, 'member3')
+                3,                  // zcard('sortedSet')
+                array(              // zrangebyscore('sortedSet', 1, 2)
+                    'member1',
+                    'member2',
+                ),
+                array(              // zrangebyscore('sortedSet', 1, 2, array('withscores' => TRUE))
+                    'member1' => 1.0,
+                    'member2' => 2.0,
+                ),
+                array(              // zrevrangebyscore('sortedSet', 1, 2)
+                    'member2',
+                    'member1',
+                ),
+                array(              // zrevrangebyscore('sortedSet', 1, 2, array('withscores' => TRUE))
+                    'member1' => 1.0,
+                    'member2' => 2.0,
+                ),
+                array(              // zrangebyscore('sortedSet', 1, 2)
+                    'member1',
+                    'member2',
+                ),
+                array(              // zrangebyscore('sortedSet', 1, 2, array('withscores' => TRUE))
+                    'member1' => 1.0,
+                    'member2' => 2.0,
+                ),
+                array(              // zrevrangebyscore('sortedSet', 1, 2)
+                    'member3',
+                    'member2',
+                ),
+                array(              // zrevrangebyscore('sortedSet', 1, 2, array('withscores' => TRUE))
+                    'member3' => 3.0,
+                    'member2' => 2.0,
+                ),
+            ), $reply
+        );
     }
 
     public function testTransaction()
@@ -305,11 +480,15 @@ class CredisTest extends CredisTestCommon
 
     public function testPubsub()
     {
-        if (!$this->useStandalone) {
-            return;
+        if (!$this->useStandalone && version_compare(PHP_VERSION, '7.0.0') >= 0) {
+            $ext = new ReflectionExtension('redis');
+            if (version_compare($ext->getVersion(), '3.1.4RC1') < 0) {
+                $this->fail('phpredis 3.1.4 is required for subscribe/pSubscribe not to segfault with php 7.x');
+                return;
+            }
         }
         $timeout = 2;
-        $time = time();
+        $time = microtime(true);
         $this->credis->setReadTimeout($timeout);
         try {
             $testCase = $this;
@@ -320,7 +499,7 @@ class CredisTest extends CredisTestCommon
             });
             $this->fail('pSubscribe should not return.');
         } catch (CredisException $e) {
-            $this->assertEquals($timeout, time() - $time);
+            $this->assertEquals($timeout, intval(microtime(true) - $time));
             if ($this->useStandalone) { // phpredis does not distinguish between timed out and disconnected
                 $this->assertEquals($e->getCode(), CredisException::CODE_TIMED_OUT);
             } else {
@@ -330,7 +509,7 @@ class CredisTest extends CredisTestCommon
 
         // Perform a new subscription. Client should have either unsubscribed or disconnected
         $timeout = 2;
-        $time = time();
+        $time = microtime(true);
         $this->credis->setReadTimeout($timeout);
         try {
             $testCase = $this;
@@ -341,7 +520,7 @@ class CredisTest extends CredisTestCommon
             });
             $this->fail('subscribe should not return.');
         } catch (CredisException $e) {
-            $this->assertEquals($timeout, time() - $time);
+            $this->assertEquals($timeout, intval(microtime(true) - $time));
             if ($this->useStandalone) { // phpredis does not distinguish between timed out and disconnected
                 $this->assertEquals($e->getCode(), CredisException::CODE_TIMED_OUT);
             } else {
@@ -352,18 +531,18 @@ class CredisTest extends CredisTestCommon
   public function testDb()
   {
       $this->tearDown();
-      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      $this->credis = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port'], $this->redisConfig[0]['timeout'], false, 1);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
       $this->assertTrue($this->credis->set('database',1));
       $this->credis->close();
-      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,0);
+      $this->credis = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port'], $this->redisConfig[0]['timeout'], false, 0);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
       $this->assertFalse($this->credis->get('database'));
-      $this->credis = new Credis_Client($this->config[0]->host, $this->config[0]->port, $this->config[0]->timeout,false,1);
+      $this->credis = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port'], $this->redisConfig[0]['timeout'], false, 1);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
@@ -376,15 +555,15 @@ class CredisTest extends CredisTestCommon
   public function testPassword()
   {
       $this->tearDown();
-      $this->assertObjectHasAttribute('password',$this->config[4]);
-      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,$this->config[4]->password);
+      $this->assertArrayHasKey('password',$this->redisConfig[4]);
+      $this->credis = new Credis_Client($this->redisConfig[4]['host'], $this->redisConfig[4]['port'], $this->redisConfig[4]['timeout'], false, 0, $this->redisConfig[4]['password']);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
       $this->assertInstanceOf('Credis_Client',$this->credis->connect());
       $this->assertTrue($this->credis->set('key','value'));
       $this->credis->close();
-      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0,'wrongpassword');
+      $this->credis = new Credis_Client($this->redisConfig[4]['host'], $this->redisConfig[4]['port'], $this->redisConfig[4]['timeout'], false, 0, 'wrongpassword');
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
@@ -398,7 +577,7 @@ class CredisTest extends CredisTestCommon
           $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
           $this->credis->close();
       }
-      $this->credis = new Credis_Client($this->config[4]->host, $this->config[4]->port, $this->config[4]->timeout,false,0);
+      $this->credis = new Credis_Client($this->redisConfig[4]['host'], $this->redisConfig[4]['port'], $this->redisConfig[4]['timeout'], false, 0);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
@@ -425,15 +604,15 @@ class CredisTest extends CredisTestCommon
 
   public function testGettersAndSetters()
   {
-      $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
-      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
+      $this->assertEquals($this->credis->getHost(),$this->redisConfig[0]['host']);
+      $this->assertEquals($this->credis->getPort(),$this->redisConfig[0]['port']);
       $this->assertEquals($this->credis->getSelectedDb(),0);
       $this->assertTrue($this->credis->select(2));
       $this->assertEquals($this->credis->getSelectedDb(),2);
       $this->assertTrue($this->credis->isConnected());
       $this->credis->close();
       $this->assertFalse($this->credis->isConnected());
-      $this->credis = new Credis_Client($this->config[0]->host,$this->config[0]->port,null,'persistenceId');
+      $this->credis = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port'], null, 'persistenceId');
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
@@ -450,18 +629,18 @@ class CredisTest extends CredisTestCommon
   public function testConnectionStrings()
   {
       $this->credis->close();
-      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port);
+      $this->credis = new Credis_Client('tcp://'.$this->redisConfig[0]['host'] . ':' . $this->redisConfig[0]['port']);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
-      $this->assertEquals($this->credis->getHost(),$this->config[0]->host);
-      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
-      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host);
+      $this->assertEquals($this->credis->getHost(),$this->redisConfig[0]['host']);
+      $this->assertEquals($this->credis->getPort(),$this->redisConfig[0]['port']);
+      $this->credis = new Credis_Client('tcp://'.$this->redisConfig[0]['host']);
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
-      $this->assertEquals($this->credis->getPort(),$this->config[0]->port);
-      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':'.$this->config[0]->port.'/abc123');
+      $this->assertEquals($this->credis->getPort(),$this->redisConfig[0]['port']);
+      $this->credis = new Credis_Client('tcp://'.$this->redisConfig[0]['host'] . ':' . $this->redisConfig[0]['port'] . '/abc123');
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }
@@ -486,7 +665,7 @@ class CredisTest extends CredisTestCommon
   {
       $this->credis->close();
       $this->expectException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
-      $this->credis = new Credis_Client('tcp://'.$this->config[0]->host.':abc');
+      $this->credis = new Credis_Client('tcp://'.$this->redisConfig[0]['host'] . ':abc');
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
       }

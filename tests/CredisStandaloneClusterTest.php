@@ -19,8 +19,9 @@ class CredisStandaloneClusterTest extends CredisClusterTest
   public function testMasterSlave()
   {
     $this->tearDown();
-    $this->cluster = new Credis_Cluster(array($this->config[0],$this->config[6]),2,$this->useStandalone);
+    $this->cluster = new Credis_Cluster(array($this->redisConfig[0],$this->redisConfig[6]), 2, $this->useStandalone);
     $this->assertTrue($this->cluster->client('master')->set('key','value'));
+    $this->waitForSlaveReplication();
     $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
     $this->assertEquals('value',$this->cluster->get('key'));
     $this->expectException('CredisException','READONLY You can\'t write against a read only slave.');
