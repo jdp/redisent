@@ -6,12 +6,6 @@ php:
   - 7.1
   - 7.2
 
-matrix:
-  allow_failures:
-    - php: 7.0
-    - php: 7.1
-    - php: 7.2
-
 install:
   - yes '' | pecl install -f redis
   - wget http://download.redis.io/releases/redis-3.2.11.tar.gz
