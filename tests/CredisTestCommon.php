@@ -1,7 +1,7 @@
 <?php
 // backward compatibility (https://stackoverflow.com/a/42828632/187780)
 if (!class_exists('\PHPUnit\Framework\TestCase') && class_exists('\PHPUnit_Framework_TestCase')) {
-    //class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
+    class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
 }
 
 class CredisTestCommon extends \PHPUnit\Framework\TestCase
@@ -148,6 +148,36 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             @copy('redis-master.conf.bak','redis-master.conf');
             @copy('redis-slave.conf.bak','redis-slave.conf');
             @copy('redis-sentinel.conf.bak','redis-sentinel.conf');
+        }
+    }
+    
+    /**
+     * Polyfill for older PHPUnit
+     */
+    public function createMock($class)
+    {
+        if (method_exists($this, 'getMock')) {
+            return $this->getMock($class);
+        } else {
+            return parent::createMock($class);
+        }
+    }
+    
+    /**
+     * Polyfill for older PHPUnit
+     */
+    public function expectException($class, $message = NULL, $code = NULL)
+    {
+        if (method_exists($this, 'setExpectedException')) {
+            $this->setExpectedException($class, $message, $code);
+        } else {
+            parent::expectException($class);
+            if ($message !== null) {
+                $this->expectExceptionMessage($message);
+            }
+            if ($code !== null) {
+                $this->expectExceptionCode($code);
+            }
         }
     }
 }

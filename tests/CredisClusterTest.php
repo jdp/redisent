@@ -92,7 +92,7 @@ class CredisClusterTest extends CredisTestCommon
       $this->waitForSlaveReplication();
       $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
       $this->assertEquals('value',$this->cluster->get('key'));
-      $this->expectException('CredisException','read-only slaves should not be writeable');
+      $this->expectException('CredisException');
       $this->assertFalse($this->cluster->client('slave')->set('key2','value'));
   }
   public function testMasterWithoutSlavesAndWriteOnlyFlag()
