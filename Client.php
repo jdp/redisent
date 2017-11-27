@@ -829,12 +829,12 @@ class Credis_Client {
                     }
                     break;
                 case 'scan':
-                    $ref =& $args[0];
-                    if (empty($ref))
+                    $trackedArgs = array(&$args[0]);
+                    if (empty($trackedArgs[0]))
                     {
-                        $ref = 0;
+                        $trackedArgs[0] = 0;
                     }
-                    $eArgs = array($ref);
+                    $eArgs = array($trackedArgs[0]);
                     if (!empty($args[1]))
                     {
                         $eArgs[] = 'MATCH';
@@ -850,12 +850,12 @@ class Credis_Client {
                 case 'sscan':
                 case 'zscan':
                 case 'hscan':
-					$ref =& $args[1];
-					if (empty($ref))
+					$trackedArgs = array(&$args[1]);
+					if (empty($trackedArgs[0]))
 					{
-						$ref = 0;
+ 						$trackedArgs[0] = 0;
 					}
-					$eArgs = array($args[0],$ref);
+					$eArgs = array($args[0],$trackedArgs[0]);
 					if (!empty($args[2]))
 					{
 						$eArgs[] = 'MATCH';
@@ -1300,7 +1300,7 @@ class Credis_Client {
         return $response;
     }
 
-    protected function decode_reply($name, $response, array $arguments = array() )
+    protected function decode_reply($name, $response, array &$arguments = array() )
     {
         // Smooth over differences between phpredis and standalone response
         switch ($name)
@@ -1351,12 +1351,12 @@ class Credis_Client {
 
             case 'scan':
             case 'sscan':
-                $ref = array_shift($response);
+                $arguments[0] = intval(array_shift($response));
                 $response = empty($response[0]) ? array() : $response[0];
                 break;
             case 'hscan':
             case 'zscan':
-                $ref = array_shift($response);
+                $arguments[0] = intval(array_shift($response));
                 $response = empty($response[0]) ? array() : $response[0];
                 if (!empty($response) && is_array($response))
                 {
