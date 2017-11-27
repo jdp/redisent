@@ -718,11 +718,30 @@ class CredisTest extends CredisTestCommon
     }
     public function testscan()
     {
-        $this->credis->set('name','Jack');
-        $this->credis->set('age','33');
+        $seen = array();
+        for($i = 0; $i < 100; $i++)
+        {
+            $this->credis->set('name.' . $i, 'Jack');
+            $this->credis->set('age.' . $i, '33');
+        }
         $iterator = null;
-        $result = $this->credis->scan($iterator,'n*',10);
-        $this->assertEquals($iterator,0);
-        $this->assertEquals($result,['name']);
+        do
+        {
+            $result = $this->credis->scan($iterator, 'n*', 10);
+            if ($result === false)
+            {
+                $this->assertEquals($iterator, 0);
+                break;
+            }
+            else
+            {
+                foreach($result as $key)
+                {
+                    $seen[$key] = true;
+                }
+            }
+        }
+        while($iterator);
+        $this->assertEquals(count($seen), 100);
     }
 }
