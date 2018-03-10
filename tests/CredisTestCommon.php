@@ -150,7 +150,7 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             @copy('redis-sentinel.conf.bak','redis-sentinel.conf');
         }
     }
-    
+
     /**
      * Polyfill for older PHPUnit
      */
@@ -162,11 +162,11 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             return parent::createMock($class);
         }
     }
-    
+
     /**
-     * Polyfill for older PHPUnit
+     * php 7.2 compat fix, as directly polyfilling for older PHPUnit causes a function signature compatibility issue
      */
-    public function expectException($class, $message = NULL, $code = NULL)
+    public function setExpectedExceptionShim($class, $message = NULL, $code = NULL)
     {
         if (method_exists($this, 'setExpectedException')) {
             $this->setExpectedException($class, $message, $code);

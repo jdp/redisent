@@ -622,7 +622,7 @@ class CredisTest extends CredisTestCommon
           $this->credis->forceStandalone();
       }
       $this->credis->setMaxConnectRetries(1);
-      $this->expectException('CredisException','Connection to Redis localhost:12345 failed after 2 failures.');
+      $this->setExpectedExceptionShim('CredisException','Connection to Redis localhost:12345 failed after 2 failures.');
       $this->credis->connect();
   }
 
@@ -664,7 +664,7 @@ class CredisTest extends CredisTestCommon
   public function testInvalidTcpConnectionstring()
   {
       $this->credis->close();
-      $this->expectException('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
+      $this->setExpectedExceptionShim('CredisException','Invalid host format; expected tcp://host[:port][/persistence_identifier]');
       $this->credis = new Credis_Client('tcp://'.$this->redisConfig[0]['host'] . ':abc');
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
@@ -674,7 +674,7 @@ class CredisTest extends CredisTestCommon
   public function testInvalidUnixSocketConnectionstring()
   {
       $this->credis->close();
-      $this->expectException('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
+      $this->setExpectedExceptionShim('CredisException','Invalid unix socket format; expected unix:///path/to/redis.sock');
       $this->credis = new Credis_Client('unix://path/to/redis.sock');
       if ($this->useStandalone) {
           $this->credis->forceStandalone();
@@ -685,7 +685,7 @@ class CredisTest extends CredisTestCommon
   {
       $this->credis->connect();
       if ( ! $this->useStandalone) {
-          $this->expectException('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
+          $this->setExpectedExceptionShim('CredisException','Cannot force Credis_Client to use standalone PHP driver after a connection has already been established.');
       }
       $this->credis->forceStandalone();
       $this->assertTrue(true);
