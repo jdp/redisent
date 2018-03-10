@@ -154,12 +154,12 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
     /**
      * Polyfill for older PHPUnit
      */
-    public function createMock($class)
+    public function createMock($originalClassName)
     {
         if (method_exists($this, 'getMock')) {
-            return $this->getMock($class);
+            return $this->getMock($originalClassName);
         } else {
-            return parent::createMock($class);
+            return parent::createMock($originalClassName);
         }
     }
 
