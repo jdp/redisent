@@ -151,10 +151,15 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
         }
     }
 
+
+    //
     /**
+     * php 7.2 compat fix, as directly polyfilling for older PHPUnit causes a function signature compatibility issue
+     * This is due to the defined return type
+     *
      * Polyfill for older PHPUnit
      */
-    protected function createMock($originalClassName)
+    protected function createMockShim($originalClassName)
     {
         if (method_exists($this, 'getMock')) {
             return $this->getMock($originalClassName);
@@ -165,6 +170,7 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
 
     /**
      * php 7.2 compat fix, as directly polyfilling for older PHPUnit causes a function signature compatibility issue
+     * This is due to the defined return type
      */
     public function setExpectedExceptionShim($class, $message = NULL, $code = NULL)
     {
