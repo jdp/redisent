@@ -150,23 +150,29 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             @copy('redis-sentinel.conf.bak','redis-sentinel.conf');
         }
     }
-    
+
+
+    //
     /**
+     * php 7.2 compat fix, as directly polyfilling for older PHPUnit causes a function signature compatibility issue
+     * This is due to the defined return type
+     *
      * Polyfill for older PHPUnit
      */
-    public function createMock($class)
+    protected function createMockShim($originalClassName)
     {
         if (method_exists($this, 'getMock')) {
-            return $this->getMock($class);
+            return $this->getMock($originalClassName);
         } else {
-            return parent::createMock($class);
+            return parent::createMock($originalClassName);
         }
     }
-    
+
     /**
-     * Polyfill for older PHPUnit
+     * php 7.2 compat fix, as directly polyfilling for older PHPUnit causes a function signature compatibility issue
+     * This is due to the defined return type
      */
-    public function expectException($class, $message = NULL, $code = NULL)
+    public function setExpectedExceptionShim($class, $message = NULL, $code = NULL)
     {
         if (method_exists($this, 'setExpectedException')) {
             $this->setExpectedException($class, $message, $code);

@@ -64,7 +64,7 @@ class CredisClusterTest extends CredisTestCommon
           $this->assertEquals($config['port'],$this->cluster->client($offset)->getPort());
       }
       $alias = "non-existent-alias";
-      $this->expectException('CredisException',"Client $alias does not exist.");
+      $this->setExpectedExceptionShim('CredisException',"Client $alias does not exist.");
       $this->cluster->client($alias);
   }
   public function testMasterSlave()
@@ -92,7 +92,7 @@ class CredisClusterTest extends CredisTestCommon
       $this->waitForSlaveReplication();
       $this->assertEquals('value',$this->cluster->client('slave')->get('key'));
       $this->assertEquals('value',$this->cluster->get('key'));
-      $this->expectException('CredisException');
+      $this->setExpectedExceptionShim('CredisException');
       $this->assertFalse($this->cluster->client('slave')->set('key2','value'));
   }
   public function testMasterWithoutSlavesAndWriteOnlyFlag()
@@ -185,7 +185,7 @@ class CredisClusterTest extends CredisTestCommon
       $this->cluster = new Credis_Cluster(array($two,$three,$four),2,$this->useStandalone);
       $this->assertTrue($this->cluster->set('key','value'));
       $this->assertEquals('value',$this->cluster->get('key'));
-      $this->expectException('CredisException','Server should either be an array or an instance of Credis_Client');
+      $this->setExpectedExceptionShim('CredisException','Server should either be an array or an instance of Credis_Client');
       new Credis_Cluster(array(new stdClass()),2,$this->useStandalone);
   }
   public function testSetMasterClient()

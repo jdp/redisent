@@ -38,7 +38,7 @@ class CredisStandaloneTest extends CredisTest
 
     public function testStandAloneMultiPipelineThrowsException()
     {
-        $this->expectException('CredisException','A pipeline is already in use and only one pipeline is supported.');
+        $this->setExpectedExceptionShim('CredisException','A pipeline is already in use and only one pipeline is supported.');
         $this->credis->pipeline()->pipeline();
     }
 }

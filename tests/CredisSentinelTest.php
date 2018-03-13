@@ -42,7 +42,7 @@ class CredisSentinelTest extends CredisTestCommon
       $master = $this->sentinel->getMasterClient($this->sentinelConfig->clustername);
       $this->assertInstanceOf('Credis_Client',$master);
       $this->assertEquals($this->redisConfig[0]['port'],$master->getPort());
-      $this->expectException('CredisException','Master not found');
+      $this->setExpectedExceptionShim('CredisException','Master not found');
       $this->sentinel->getMasterClient('non-existing-cluster');
   }
   public function testMasters()
@@ -73,7 +73,7 @@ class CredisSentinelTest extends CredisTestCommon
       $this->assertEquals($this->sentinelConfig->clustername,$master[1]);
       $this->assertEquals($this->redisConfig[0]['port'],$master[5]);
 
-      $this->expectException('CredisException','No such master with that name');
+      $this->setExpectedExceptionShim('CredisException','No such master with that name');
       $this->sentinel->master('non-existing-cluster');
   }
   public function testSlaveClient()
@@ -84,7 +84,7 @@ class CredisSentinelTest extends CredisTestCommon
       foreach($slaves as $slave){
           $this->assertInstanceOf('Credis_Client',$slave);
       }
-      $this->expectException('CredisException','No such master with that name');
+      $this->setExpectedExceptionShim('CredisException','No such master with that name');
       $this->sentinel->getSlaveClients('non-existing-cluster');
   }
   public function testSlaves()
@@ -100,12 +100,12 @@ class CredisSentinelTest extends CredisTestCommon
       $this->assertInternalType('array',$slaves);
       $this->assertCount(0,$slaves);
 
-      $this->expectException('CredisException','No such master with that name');
+      $this->setExpectedExceptionShim('CredisException','No such master with that name');
       $this->sentinel->slaves('non-existing-cluster');
   }
   public function testNonExistingClusterNameWhenCreatingSlaves()
   {
-      $this->expectException('CredisException','No such master with that name');
+      $this->setExpectedExceptionShim('CredisException','No such master with that name');
       $this->sentinel->createSlaveClients('non-existing-cluster');
   }
   public function testCreateCluster()
@@ -116,7 +116,7 @@ class CredisSentinelTest extends CredisTestCommon
       $cluster = $this->sentinel->createCluster($this->sentinelConfig->clustername,0,1,false);
       $this->assertInstanceOf('Credis_Cluster',$cluster);
       $this->assertCount(2,$cluster->clients());
-      $this->expectException('CredisException','The master is down');
+      $this->setExpectedExceptionShim('CredisException','The master is down');
       $this->sentinel->createCluster($this->sentinelConfig->downclustername);
   }
   public function testGetCluster()
@@ -155,7 +155,7 @@ class CredisSentinelTest extends CredisTestCommon
       $host = 'localhost';
       $port = '123456';
 
-      $client = $this->createMock('\Credis_Client');
+      $client = $this->createMockShim('\Credis_Client');
       $sentinel = new Credis_Sentinel($client);
 
       $client->expects($this->once())->method('getHost')->willReturn($host);
@@ -166,7 +166,7 @@ class CredisSentinelTest extends CredisTestCommon
   }
   public function testNonExistingMethod()
   {
-      $this->expectException('CredisException','Unknown sentinel subcommand \'bla\'');
+      $this->setExpectedExceptionShim('CredisException','Unknown sentinel subcommand \'bla\'');
       $this->sentinel->bla();
   }
 }
