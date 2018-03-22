@@ -65,6 +65,10 @@ class CredisTest extends CredisTestCommon
         $this->assertEquals('FOO', $this->credis->get('foo'));
         $this->assertFalse($this->credis->get('nil'));
 
+        // exists support
+        $this->assertEquals($this->credis->exists('foo'), 1);
+        $this->assertEquals($this->credis->exists('nil'), 0);
+
         // Empty string
         $this->credis->set('empty','');
         $this->assertEquals('', $this->credis->get('empty'));
