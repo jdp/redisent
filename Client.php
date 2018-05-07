@@ -1188,14 +1188,7 @@ class Credis_Client {
                     break;
                 case 'exists':
                     // smooth over phpredis-v4 vs earlier difference to match documented credis return results
-                    if ($response === true)
-                    {
-                        $response = 1;
-                    }
-                    else if ($response === false)
-                    {
-                        $response = 0;
-                    }
+                    $response = (int) $response;
                     break;
                 default:
                     $error = $this->redis->getLastError();
