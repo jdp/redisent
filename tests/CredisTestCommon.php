@@ -30,7 +30,7 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             $this->redisConfig = $arrayConfig;
         }
 
-        if($this->useStandalone && !extension_loaded('redis')) {
+        if(!$this->useStandalone && !extension_loaded('redis')) {
             $this->fail('The Redis extension is not loaded.');
         }
     }
