@@ -65,8 +65,11 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
         $slaveConfig = new Credis_Client($this->slaveConfig['host'], $this->slaveConfig['port']);
         $slaveConfig->forceStandalone();
 
-        while (true)
+        $start = microtime(true);
+        $timeout = $start + 60;
+        while (microtime(true) < $timeout)
         {
+            usleep(100);
             $role = $slaveConfig->role();
             if ($role[0] !== 'slave')
             {
@@ -86,9 +89,9 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
                     return true;
                 }
             }
-            usleep(100);
         }
         // shouldn't get here
+        $this->fail("Timeout (".(microtime(true) - $start)." seconds) waiting for master-slave replication to finalize");
         return false;
     }
 
