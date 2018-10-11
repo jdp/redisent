@@ -31,6 +31,34 @@ class CredisSentinelTest extends CredisTestCommon
     }
     $this->waitForSlaveReplication();
   }
+
+  public static function setUpBeforeClass()
+  {
+    parent::setUpBeforeClass();
+    if(preg_match('/^WIN/',strtoupper(PHP_OS))){
+      echo "\tredis-server redis-sentinel.conf --sentinel".PHP_EOL.PHP_EOL;
+    } else {
+      sleep(2);
+      chdir(__DIR__);
+      copy('redis-sentinel.conf','redis-sentinel.conf.bak');
+      exec('redis-server redis-sentinel.conf --sentinel');
+      // wait for redis to initialize
+      sleep(1);
+    }
+  }
+
+  public static function tearDownAfterClass()
+  {
+    parent::tearDownAfterClass();
+    if(preg_match('/^WIN/',strtoupper(PHP_OS))){
+      echo "Please kill all Redis instances manually:".PHP_EOL;
+    } else {
+      chdir(__DIR__);
+      @unlink('redis-sentinel.conf');
+      @copy('redis-sentinel.conf.bak','redis-sentinel.conf');
+    }
+  }
+
   protected function tearDown()
   {
     if($this->sentinel) {
