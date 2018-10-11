@@ -105,8 +105,7 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             echo "\tredis-server redis-3.conf".PHP_EOL;
             echo "\tredis-server redis-4.conf".PHP_EOL;
             echo "\tredis-server redis-auth.conf".PHP_EOL;
-            echo "\tredis-server redis-socket.conf".PHP_EOL;
-            echo "\tredis-sentinel redis-sentinel.conf".PHP_EOL.PHP_EOL;
+            echo "\tredis-server redis-socket.conf".PHP_EOL.PHP_EOL;
         } else {
             chdir(__DIR__);
             $directoryIterator = new DirectoryIterator(__DIR__);
@@ -118,10 +117,8 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             }
             copy('redis-master.conf','redis-master.conf.bak');
             copy('redis-slave.conf','redis-slave.conf.bak');
-            copy('redis-sentinel.conf','redis-sentinel.conf.bak');
-            exec('redis-sentinel redis-sentinel.conf');
-            // wait for redis to initialize
-            usleep(200);
+            // wait for redis instances to initialize
+            sleep(1);
         }
     }
 
@@ -147,10 +144,8 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
             @unlink('dump.rdb');
             @unlink('redis-master.conf');
             @unlink('redis-slave.conf');
-            @unlink('redis-sentinel.conf');
             @copy('redis-master.conf.bak','redis-master.conf');
             @copy('redis-slave.conf.bak','redis-slave.conf');
-            @copy('redis-sentinel.conf.bak','redis-sentinel.conf');
         }
     }
 
