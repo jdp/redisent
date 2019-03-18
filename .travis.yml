@@ -17,11 +17,6 @@ matrix:
     - php: 7.2
       env:
         - PHPUNIT_VERSION=^7.5
-    - php: nightly
-
-allow_failures:
-  - php: nightly
-
 
 install:
   - yes '' | pecl install -f redis
