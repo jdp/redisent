@@ -325,8 +325,7 @@ class Credis_Sentinel
 
     /**
      * Check if the Sentinel is still responding
-     * @param string $name
-     * @return mixed
+     * @return string|Credis_Client
      */
     public function ping()
     {

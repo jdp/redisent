@@ -172,10 +172,11 @@ class CredisSentinelTest extends CredisTestCommon
       $this->assertEquals($this->redisConfig[0]['host'],$address[0]);
       $this->assertEquals($this->redisConfig[0]['port'],$address[1]);
   }
+
   public function testPing()
   {
-      $pong = $this->sentinel->ping();
-      $this->assertEquals("PONG",$pong);
+    $pong = $this->sentinel->ping();
+    $this->assertEquals("PONG",$pong);
   }
 
   public function testGetHostAndPort()
