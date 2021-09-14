@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/colinmollenhour/credis.svg?branch=master)](https://travis-ci.org/colinmollenhour/credis)
+[![Build Status](https://app.travis-ci.com/colinmollenhour/credis.svg?branch=master)](https://travis-ci.org/colinmollenhour/credis)
 
 # Credis
 
