@@ -200,6 +200,12 @@ class Credis_Client {
     protected $scheme;
 
     /**
+     * SSL Meta information
+     * @var string
+     */
+    protected $sslMeta;
+
+    /**
      * Port on which the Redis server is running
      * @var integer
      */
@@ -306,6 +312,21 @@ class Credis_Client {
 
 
     /**
+     * @var bool
+     */
+    protected $isTls = false;
+
+    /**
+     * Gets Useful Meta debug information about the SSL
+     *
+     * @return string
+     */
+    public function getSslMeta()
+    {
+        return $this->sslMeta;
+    }
+
+    /**
      * Creates a Redisent connection to the Redis server on host {@link $host} and port {@link $port}.
      * $host may also be a path to a unix socket or a string in the form of tcp://[hostname]:[port] or unix://[path]
      *
@@ -328,7 +349,7 @@ class Credis_Client {
         $this->selectedDb = (int)$db;
         $this->convertHost();
         // PHP Redis extension support TLS since 5.3.0
-        if ($this->scheme == 'tls' && !$this->standalone && version_compare(phpversion('redis'),'5.3.0','<')){
+        if ($this->isTls && !$this->standalone && version_compare(phpversion('redis'),'5.3.0','<')){
             $this->standalone = true;
         }
     }
@@ -415,10 +436,16 @@ class Credis_Client {
         $this->closeOnDestruct = $flag;
         return $this;
     }
+    protected function startsWith($haystack, $needle)
+    {
+        $length = strlen($needle);
+        return (substr($haystack, 0, $length) === $needle);
+    }
     protected function convertHost()
     {
-        if (preg_match('#^(tcp|tls|unix)://(.*)$#', $this->host, $matches)) {
-            if($matches[1] == 'tcp' || $matches[1] == 'tls') {
+        if (preg_match('#^(tcp|tls|tlsv\d(?:\.\d)?|unix)://(.+)$#', $this->host, $matches)) {
+            $this->isTls = $this->startsWith($matches[1], 'tls');
+            if($matches[1] == 'tcp' || $this->isTls) {
                 $this->scheme = $matches[1];
                 if ( ! preg_match('#^([^:]+)(:([0-9]+))?(/(.+))?$#', $matches[2], $matches)) {
                     throw new CredisException('Invalid host format; expected '.$this->scheme.'://host[:port][/persistence_identifier]');
@@ -464,7 +491,22 @@ class Credis_Client {
                 $remote_socket .= '/'.$this->persistent;
                 $flags = $flags | STREAM_CLIENT_PERSISTENT;
             }
-            $result = $this->redis = @stream_socket_client($remote_socket, $errno, $errstr, $this->timeout !== null ? $this->timeout : 2.5, $flags);
+
+            if ($this->isTls) {
+                $context = stream_context_create(['ssl' => [
+                    'capture_peer_cert' => true,
+                    'capture_peer_cert_chain' => true,
+                    'capture_session_meta' => true,
+                ]]);
+            } else {
+                $context = null;
+            }
+
+            $result = $this->redis = @stream_socket_client($remote_socket, $errno, $errstr, $this->timeout !== null ? $this->timeout : 2.5, $flags, $context);
+
+            if ($result && $this->isTls) {
+                $this->sslMeta = stream_context_get_options($context);
+            }
         }
         else {
             if ( ! $this->redis) {

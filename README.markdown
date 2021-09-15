@@ -1,4 +1,4 @@
-[![Build Status](https://app.travis-ci.com/colinmollenhour/credis.svg?branch=master)](https://travis-ci.org/colinmollenhour/credis)
+[![Build Status](https://travis-ci.org/colinmollenhour/credis.svg?branch=master)](https://travis-ci.org/colinmollenhour/credis)
 
 # Credis
 
@@ -43,6 +43,10 @@ $redis = new Credis_Client(/* connection string */);
 ### TLS connection string
 
 `tls://host[:port][/persistence_identifier]` 
+
+or 
+
+`tlsv1.2://host[:port][/persistence_identifier]`
 
 #### Enable transport level security (TLS)
 
