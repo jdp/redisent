@@ -1,5 +1,5 @@
 /tests export-ignore
-/testenv export-ignore
+/testend export-ignore
 /.github export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
