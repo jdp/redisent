@@ -12,9 +12,9 @@ class CredisSentinelTest extends CredisTestCommon
 
   protected $sentinelConfig;
 
-  protected function setUp()
+  protected function setUpInternal()
   {
-    parent::setUp();
+    parent::setUpInternal();
     if($this->sentinelConfig === NULL) {
       $configFile = dirname(__FILE__).'/sentinel_config.json';
       if( ! file_exists($configFile) || ! ($config = file_get_contents($configFile))) {
@@ -32,9 +32,9 @@ class CredisSentinelTest extends CredisTestCommon
     $this->waitForSlaveReplication();
   }
 
-  public static function setUpBeforeClass()
+  public static function setUpBeforeClassInternal()
   {
-    parent::setUpBeforeClass();
+    parent::setUpBeforeClassInternal();
     if(preg_match('/^WIN/',strtoupper(PHP_OS))){
       echo "\tredis-server redis-sentinel.conf --sentinel".PHP_EOL.PHP_EOL;
     } else {
@@ -47,9 +47,9 @@ class CredisSentinelTest extends CredisTestCommon
     }
   }
 
-  public static function tearDownAfterClass()
+  public static function tearDownAfterClassInternal()
   {
-    parent::tearDownAfterClass();
+    parent::tearDownAfterClassInternal();
     if(preg_match('/^WIN/',strtoupper(PHP_OS))){
       echo "Please kill all Redis instances manually:".PHP_EOL;
     } else {
@@ -59,7 +59,7 @@ class CredisSentinelTest extends CredisTestCommon
     }
   }
 
-  protected function tearDown()
+  protected function tearDownInternal()
   {
     if($this->sentinel) {
       $this->sentinel = NULL;

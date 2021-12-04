@@ -9,15 +9,15 @@ class CredisClusterTest extends CredisTestCommon
   /** @var Credis_Cluster */
   protected $cluster;
 
-  protected function setUp()
+  protected function setUpInternal()
   {
-    parent::setUp();
+    parent::setUpInternal();
 
     $clients = array_slice($this->redisConfig,0,4);
     $this->cluster = new Credis_Cluster($clients,2,$this->useStandalone);
   }
 
-  protected function tearDown()
+  protected function tearDownInternal()
   {
     if($this->cluster) {
       $this->cluster->flushAll();
