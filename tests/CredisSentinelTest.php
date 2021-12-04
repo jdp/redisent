@@ -219,7 +219,20 @@ class CredisSentinelTest extends CredisTestCommon
   }
   public function testNonExistingMethod()
   {
-      $this->setExpectedExceptionShim('CredisException','Unknown sentinel subcommand \'bla\'');
-      $this->sentinel->bla();
+      try
+      {
+        $this->sentinel->bla();
+      }
+      catch(CredisException $e)
+      {
+        if (strpos($e->getMessage(), 'sentinel subcommand') !== false)
+        {
+          $this->assertStringStartsWith('Unknown sentinel subcommand \'bla\'', $e->getMessage());
+        }
+        else
+        {
+          $this->assertStringStartsWith('ERR Unknown subcommand or wrong number of arguments', $e->getMessage());
+        }
+      }
   }
 }
