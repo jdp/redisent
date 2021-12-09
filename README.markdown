@@ -1,4 +1,4 @@
-[![Build Status](https://app.travis-ci.com/colinmollenhour/credis.svg?branch=master)](https://travis-ci.org/colinmollenhour/credis)
+![Build Status](https://github.com/colinmollenhour/credis/actions/workflows/ci.yml/badge.svg)
 
 # Credis
 

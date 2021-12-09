@@ -8,16 +8,16 @@ class CredisTest extends CredisTestCommon
     /** @var Credis_Client */
     protected $credis;
 
-    protected function setUp()
+    protected function setUpInternal()
     {
-        parent::setUp();
+        parent::setUpInternal();
         $this->credis = new Credis_Client($this->redisConfig[0]['host'], $this->redisConfig[0]['port'], $this->redisConfig[0]['timeout']);
         if($this->useStandalone) {
             $this->credis->forceStandalone();
         }
         $this->credis->flushDb();
     }
-    protected function tearDown()
+    protected function tearDownInternal()
     {
         if($this->credis) {
             $this->credis->close();
@@ -578,7 +578,15 @@ class CredisTest extends CredisTestCommon
       }
       catch(CredisException $e)
       {
-          $this->assertStringStartsWith('WRONGPASS invalid username-password pair', $e->getMessage());
+          if (strpos($e->getMessage(), 'username') !== false)
+          {
+            $this->assertStringStartsWith('WRONGPASS invalid username-password pair', $e->getMessage());
+          }
+          else
+          {
+            $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
+          }
+
           $this->credis->close();
       }
       $this->credis = new Credis_Client($this->redisConfig[4]['host'], $this->redisConfig[4]['port'], $this->redisConfig[4]['timeout'], false, 0);
@@ -599,7 +607,14 @@ class CredisTest extends CredisTestCommon
       }
       catch(CredisException $e)
       {
+        if (strpos($e->getMessage(), 'username') !== false)
+        {
           $this->assertStringStartsWith('WRONGPASS invalid username-password pair', $e->getMessage());
+        }
+        else
+        {
+          $this->assertStringStartsWith('ERR invalid password', $e->getMessage());
+        }
       }
       $this->assertTrue($this->credis->auth('thepassword'));
       $this->assertTrue($this->credis->set('key','value'));

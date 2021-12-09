@@ -4,13 +4,19 @@ if (!class_exists('\PHPUnit\Framework\TestCase') && class_exists('\PHPUnit_Frame
     class_alias('\PHPUnit_Framework_TestCase', '\PHPUnit\Framework\TestCase');
 }
 
-class CredisTestCommon extends \PHPUnit\Framework\TestCase
+if (version_compare(phpversion(), '8.0.0', '>=')) {
+  include 'phpunit-shims/php8.php';
+} else {
+  include 'phpunit-shims/php7.php';
+}
+
+class CredisTestCommon extends CredisTestCommonShim
 {
     protected $useStandalone = false;
     protected $redisConfig = null;
     protected $slaveConfig = null;
 
-    protected function setUp()
+    protected function setUpInternal()
     {
         if ($this->redisConfig === null)
         {
@@ -95,7 +101,7 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
         return false;
     }
 
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClassInternal()
     {
         if(preg_match('/^WIN/',strtoupper(PHP_OS))){
             echo "Unit tests will not work automatically on Windows. Please setup all Redis instances manually:".PHP_EOL;
@@ -122,7 +128,7 @@ class CredisTestCommon extends \PHPUnit\Framework\TestCase
         }
     }
 
-    public static function tearDownAfterClass()
+    public static function tearDownAfterClassInternal()
     {
         if(preg_match('/^WIN/',strtoupper(PHP_OS))){
             echo "Please kill all Redis instances manually:".PHP_EOL;
