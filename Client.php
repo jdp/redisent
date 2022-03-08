@@ -201,7 +201,7 @@ class Credis_Client {
 
     /**
      * Port on which the Redis server is running
-     * @var integer
+     * @var integer|null
      */
     protected $port;
 
@@ -358,7 +358,7 @@ class Credis_Client {
     }
     /**
      * Return the port of the Redis instance
-     * @return int
+     * @return int|null
      */
     public function getPort()
     {
@@ -474,8 +474,8 @@ class Credis_Client {
             try
             {
                 $result = $this->persistent
-                    ? $this->redis->pconnect($this->host, $this->port, $socketTimeout, $this->persistent)
-                    : $this->redis->connect($this->host, $this->port, $socketTimeout);
+                    ? $this->redis->pconnect($this->host, (int)$this->port, $socketTimeout, $this->persistent)
+                    : $this->redis->connect($this->host, (int)$this->port, $socketTimeout);
             }
             catch(Exception $e)
             {
