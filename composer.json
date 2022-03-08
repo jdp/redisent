@@ -13,6 +13,9 @@
 	"require": {
 		"php": ">=5.4.0"
 	},
+	"suggest": {
+		"ext-redis": "Improved performance for communicating with redis"
+	},
 	"autoload": {
 		"classmap": [
 			"Client.php",
