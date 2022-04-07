@@ -276,6 +276,11 @@ class Credis_Client {
     /**
      * @var string
      */
+    protected $authUsername;
+
+    /**
+     * @var string
+     */
     protected $authPassword;
 
     /**
@@ -315,8 +320,9 @@ class Credis_Client {
      * @param string $persistent  Flag to establish persistent connection
      * @param int $db The selected datbase of the Redis server
      * @param string $password The authentication password of the Redis server
+     * @param string $username The authentication username of the Redis server
      */
-    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $persistent = '', $db = 0, $password = null)
+    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $persistent = '', $db = 0, $password = null, $username = null)
     {
         $this->host = (string) $host;
         $this->port = (int) $port;
@@ -325,10 +331,15 @@ class Credis_Client {
         $this->persistent = (string) $persistent;
         $this->standalone = ! extension_loaded('redis');
         $this->authPassword = $password;
+        $this->authUsername = $username;
         $this->selectedDb = (int)$db;
         $this->convertHost();
-        // PHP Redis extension support TLS since 5.3.0
-        if ($this->scheme == 'tls' && !$this->standalone && version_compare(phpversion('redis'),'5.3.0','<')){
+        // PHP Redis extension support TLS/ACL AUTH since 5.3.0
+        if ((
+              $this->scheme === 'tls'
+              || $this->authUsername !== null
+            )
+            && !$this->standalone && version_compare(phpversion('redis'),'5.3.0','<')){
             $this->standalone = true;
         }
     }
@@ -504,9 +515,8 @@ class Credis_Client {
         if ($this->readTimeout) {
             $this->setReadTimeout($this->readTimeout);
         }
-
         if($this->authPassword) {
-            $this->auth($this->authPassword);
+            $this->auth($this->authPassword, $this->authUsername);
         }
         if($this->selectedDb !== 0) {
             $this->select($this->selectedDb);
@@ -641,11 +651,17 @@ class Credis_Client {
 
     /**
      * @param string $password
+     * @param string|null $username
      * @return bool
      */
-    public function auth($password)
+    public function auth($password, $username = null)
     {
-        $response = $this->__call('auth', array($password));
+        if ($username !== null) {
+            $response = $this->__call('auth', array($username, $password));
+            $this->authUsername= $username;
+        } else {
+            $response = $this->__call('auth', array($password));
+        }
         $this->authPassword = $password;
         return $response;
     }
@@ -1150,6 +1166,10 @@ class Credis_Client {
                     // allow phpredis to see the caller's reference
                     //$param_ref =& $args[0];
                     break;
+                case 'auth':
+                    // For phpredis pre-v5.3, the type signature is string, not array|string
+                    $args = (is_array($args) && count($args) === 1) ? $args : array($args);
+                    break;
                 default:
                     // Flatten arguments
                     $args = self::_flattenArguments($args);
@@ -1184,6 +1204,7 @@ class Credis_Client {
                     call_user_func_array(array($this->redisMulti, $name), $args);
                     return $this;
                 }
+
 
                 // Send request, retry one time when using persistent connections on the first request only
                 $this->requests++;
